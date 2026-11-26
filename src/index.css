@@ -1,0 +1,29 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  background: #f5f5f5;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #141414;
+  }
+}
+
+#root {
+  min-height: 100svh;
+  box-sizing: border-box;
+}
+
+/* Phone width: 16px gutter, no horizontal page scroll. */
+.app-content {
+  box-sizing: border-box;
+  padding: 16px;
+  max-width: 100%;
+  overflow-x: hidden;
+}
