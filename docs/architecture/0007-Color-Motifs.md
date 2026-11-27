@@ -23,7 +23,7 @@ to validate.
 - The palette is `default` (the neutral grey tag) plus `magenta`, `red`, `volcano`, `orange`, `gold`,
   `lime`, `green`, `cyan`, `blue`, `geekblue` and `purple`. It exists twice, once per side:
   `public.color_motifs()` in the database (`0029_color_motifs.sql`) and `COLOR_MOTIFS` in
-  `src/features/color-motif/colorMotif.ts`.
+  `src/shared/color-motif/colorMotif.ts`.
 - They cannot drift: `colorMotif.test.ts` (Vitest) reads the array from the newest migration that
   defines `public.color_motifs()` and compares it with `COLOR_MOTIFS`; `color_motifs.test.sql`
   (pgTAP) compares the function with the same list and checks that every table's constraint calls it.
@@ -34,7 +34,7 @@ to validate.
   `{"name", "color"}`. Its return type changed, so `0029` drops and recreates it with the same
   arguments, filters, sorts and paging.
 - The web never trusts the stored value blindly: `toColorMotif` turns anything unknown into
-  `default`. `ColorMotifTag` (`src/components/color-motif/`) draws every pill and always keeps its
+  `default`. `ColorMotifTag` (`src/shared/color-motif/`) draws every pill and always keeps its
   text, so colour is never the only signal. `ColorMotifSelect` is the "Color" field of the six
   Create and Edit pages; each option is the pill itself.
 - The local seed (`02_reference_data.sql`) gives every seeded row its own colour; statuses follow the
@@ -51,4 +51,4 @@ to validate.
 
 ## Company pills
 
-- `src/components/company/CompanyTag.tsx` is the one place that draws a company as a pill in its colour. It takes `{ name, color_motif }` and is used by the Companies, Clients, Company cleaners and Cleaning Jobs lists. A missing company is a grey "Unknown" pill. Any list that shows a company through another table selects `companies(name, color_motif)`.
+- `src/shared/company/CompanyTag.tsx` is the one place that draws a company as a pill in its colour. It takes `{ name, color_motif }` and is used by the Companies, Clients, Company cleaners and Cleaning Jobs lists. A missing company is a grey "Unknown" pill. Any list that shows a company through another table selects `companies(name, color_motif)`.

@@ -30,8 +30,8 @@ small, so the work moved to where the data is.
 - All four functions are `security invoker` and executable by `authenticated` only, so RLS from
   [0001](0001-Role-Based-Access.md) still decides what a user sees.
 - Web code is split as: `src/features/cleaning-jobs/` for fetchers (they take the Supabase client, so
-  tests can pass a mock), hooks and pure helpers; `src/components/cleaning-jobs/` for components;
-  `src/pages/cleaning-jobs/` for the list page only.
+  tests can pass a mock), hooks and pure helpers; `src/features/cleaning-jobs/components/` for components;
+  `src/features/cleaning-jobs/pages/` for the list page only.
 - Each function has one hook in `hooks.ts` (`useCleaningJobs`, `useCompleteAddress`,
   `useCleanersForCleaningJob`, `useClientFeedbacks`). Components never call `supabase.rpc` or
   `useQuery` directly. Results are fresh for 30 seconds; the cache key includes every argument,

@@ -31,7 +31,7 @@ Seeded local accounts (local only, never on a hosted project):
 | `user@example.com`       | `user-password-123`       | User        |
 | `superadmin@example.com` | `superadmin-password-123` | Super Admin |
 
-Architecture changes are documented, one numbered file each, in [docs/architecture](docs/architecture). Access control: [0001 Role-based access](docs/architecture/0001-Role-Based-Access.md). Users page: [0002 User management](docs/architecture/0002-User-Management.md). Cleaning jobs: [0003 Data model](docs/architecture/0003-Cleaning-Job-Data-Model.md), [0004 List function and hooks](docs/architecture/0004-Cleaning-Jobs-List-Function.md), [0005 Preferred time zone](docs/architecture/0005-Preferred-Time-Zone.md). Local data: [0006 Seed data](docs/architecture/0006-Local-Seed-Data.md). Pill colours: [0007 Color motifs](docs/architecture/0007-Color-Motifs.md).
+Architecture changes are documented, one numbered file each, in [docs/architecture](docs/architecture). Access control: [0001 Role-based access](docs/architecture/0001-Role-Based-Access.md). Users page: [0002 User management](docs/architecture/0002-User-Management.md). Cleaning jobs: [0003 Data model](docs/architecture/0003-Cleaning-Job-Data-Model.md), [0004 List function and hooks](docs/architecture/0004-Cleaning-Jobs-List-Function.md), [0005 Preferred time zone](docs/architecture/0005-Preferred-Time-Zone.md). Local data: [0006 Seed data](docs/architecture/0006-Local-Seed-Data.md). Pill colours: [0007 Color motifs](docs/architecture/0007-Color-Motifs.md). Code layout: [0008 Feature folders](docs/architecture/0008-Feature-Folders.md).
 
 ## Scripts
 
@@ -69,16 +69,26 @@ supabase/
   functions/exchange-rate/     edge function + Deno tests
   tests/database/              pgTAP tests
 src/
-  lib/supabase.ts              typed client
+  main.tsx                     entry point, mounts src/app/App.tsx
+  app/                         composition only, imports features
+    App.tsx                    Refine, layout and the routes of every feature
+    features.ts                the feature list (its order is the sidebar order)
+    providers/                 Refine data/live, auth and access control providers
+  features/<feature>/          one folder per feature: areas, cleaners, cleaning-jobs, cleaning-statuses,
+                               cleaning-types, clients, companies, company-cleaners, contacts, dashboard,
+                               items, todos, users. Never imports another feature.
+    routes.tsx                 the feature's Refine resource and <Route> tree (a FeatureModule)
+    pages/                     only List, Create, Edit and Show pages, and their tests
+    components/                any other component of the feature (filter bars, modals, pickers)
+    api.ts, hooks.ts, *.ts     data access (takes the client as an argument), React Query hooks, helpers
+  shared/                      used by two or more features; never imports a feature
+    supabase.ts                typed client and AppSupabaseClient
+    featureModule.ts          the { resource, routes } contract each feature exports
+    ui/                        generic UI wrappers (Card)
+    color-motif/               the pill colour palette (COLOR_MOTIFS), ColorMotifSelect, ColorMotifTag
+    company/                   CompanyTag, the company pill
   types/                       generated DB types + helpers (db.ts)
-  providers/                   Refine data/live provider, auth provider
-  features/integration/        data access + hooks for dashboard checks
-  features/users/              role ids and the Super Admin user update call
-  features/cleaning-jobs/      data access, React Query hooks and helpers for the Cleaning Jobs list
-  features/color-motif/        the pill colour palette (COLOR_MOTIFS) shared by every list and form
-  components/<feature>/        components used by a page that are not a page (filter bars, modals, pickers)
-  pages/dashboard, pages/todos, pages/users, pages/companies, pages/clients, pages/contacts, pages/cleaners, pages/company-cleaners
-                               (a pages folder holds only Create, Edit and List pages)
+  test/setup.ts                Vitest setup
 e2e/                           Playwright specs and the Frankfurter stub
 ```
 
@@ -88,7 +98,7 @@ e2e/                           Playwright specs and the Frankfurter stub
 2. RLS: enable RLS on the table, then add explicit `grant`s and policies. Anon gets nothing by default. Policies call `has_permission('<table>', '<action>')`, and the same migration inserts the table's rows in `app_permissions` (Admin and Super Admin read and write, User reads only). `rbac.test.sql` fails if a table has no row for a role.
 3. pgTAP: add a test under `supabase/tests/database/` that proves isolation (user A cannot read or write user B's rows).
 4. Types: `pnpm db:reset`, which regenerates `src/types/database.types.ts`.
-5. Resource: add a `ResourceProps` entry in `src/App.tsx`, then pages under `src/pages/<table>/` (only Create, Edit and List; other components go in `src/components/<table>/`) using `useTable`, `useForm` and `useShow` with `Tables<'<table>'>`.
+5. Feature: create `src/features/<table>/` with `pages/` (only List, Create, Edit and Show; any other component goes in `src/features/<table>/components/`) using `useTable`, `useForm` and `useShow` with `Tables<'<table>'>`, and a `routes.tsx` that exports a `FeatureModule` (follow `src/features/areas/routes.tsx`). Add it to the `features` array in `src/app/features.ts`; its position there is its place in the sidebar. Code used by another feature too goes in `src/shared/`.
 6. Run `pnpm test:all`.
 
 ## The two integration buttons
