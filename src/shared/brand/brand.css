@@ -1,0 +1,59 @@
+/* The Tidy Team brand for the admin app. Values come from the Design System tokens.css (light theme).
+   Only the accent, text, page ground, fonts and the sidebar title are applied here. */
+
+@font-face {
+  font-family: 'Anton';
+  src: url('./fonts/Anton-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Figtree';
+  src: url('./fonts/Figtree-Variable.woff2') format('woff2');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --berry-600: #b61f47;
+  --berry-800: #79112d;
+  --cocoa-700: #3e2318;
+  --cocoa-500: #6b402f;
+  /* Admin page ground: near-white, lighter than the Design System blush-100 (too heavy for dense screens). */
+  --page-ground: #f7f7f7;
+  --font-display: 'Anton', 'Impact', 'Arial Narrow', sans-serif;
+  --font-sans: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* Page titles (Refine renders them as h3) and any other large heading. */
+h1.ant-typography,
+h2.ant-typography,
+h3.ant-typography {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Sidebar and login title: sparkle plus the brand name. */
+.brand-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--cocoa-700);
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.brand-title .tt-sparkle {
+  width: 24px;
+  height: 24px;
+  color: var(--berry-600);
+}
