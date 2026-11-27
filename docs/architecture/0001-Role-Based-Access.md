@@ -1,7 +1,7 @@
 # 0001 Role-based access
 
 - Ticket: T3C-B0
-- Plan: `.claude/plans/backend/T3C-B0-Users-Table.md`
+- Plan: `.claude/plans/T3C-B0-Users-Table.md`
 - Date: 2026-11-27
 - Status: implemented
 

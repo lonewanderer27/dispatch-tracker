@@ -1,7 +1,7 @@
 # 0005 Preferred time zone
 
 - Ticket: T3C-F35
-- Plan: `.claude/plans/backend/T3C-F35-Cleaning-Jobs-List.md`
+- Plan: `.claude/plans/T3C-F35-Cleaning-Jobs-List.md`
 - Date: 2026-11-27
 - Status: implemented
 - Builds on: [0004 Cleaning jobs list](0004-Cleaning-Jobs-List-Function.md)

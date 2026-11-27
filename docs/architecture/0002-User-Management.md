@@ -1,7 +1,7 @@
 # 0002 User management
 
 - Ticket: T3C-B0
-- Plan: `.claude/plans/backend/T3C-B0-Users-Table.md` (Phase 3)
+- Plan: `.claude/plans/T3C-B0-Users-Table.md` (Phase 3)
 - Date: 2026-11-27
 - Status: implemented
 - Builds on: [0001 Role-based access](0001-Role-Based-Access.md)

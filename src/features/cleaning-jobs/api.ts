@@ -1,5 +1,5 @@
 // Data access for the Cleaning Jobs list. Takes the client as an argument so tests can pass a mock.
-import type { AppSupabaseClient } from '@/features/integration/api'
+import type { AppSupabaseClient } from '@/shared/supabase'
 import type { CleaningJobListRow, ClientFeedback, JobCleaner } from '@/types/db'
 
 export type CleaningJobSortKey = 'schedule' | 'client' | 'cleaning_type' | 'rating'
