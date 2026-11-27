@@ -14,6 +14,7 @@ import {
   SolutionOutlined,
   PhoneOutlined,
   UserOutlined,
+  LinkOutlined,
 } from '@ant-design/icons'
 import { ConfigProvider, theme } from 'antd'
 import { Navigate, Outlet, Route, Routes } from 'react-router'
@@ -37,6 +38,8 @@ import { ContactEdit } from '@/pages/contacts/ContactEdit'
 import { CleanerList } from '@/pages/cleaners/CleanerList'
 import { CleanerCreate } from '@/pages/cleaners/CleanerCreate'
 import { CleanerEdit } from '@/pages/cleaners/CleanerEdit'
+import { CompanyCleanerList } from '@/pages/company-cleaners/CompanyCleanerList'
+import { CompanyCleanerCreate } from '@/pages/company-cleaners/CompanyCleanerCreate'
 import { UserList } from '@/pages/users/UserList'
 import { UserEdit } from '@/pages/users/UserEdit'
 
@@ -87,6 +90,12 @@ const resources: ResourceProps[] = [
     create: '/cleaners/create',
     edit: '/cleaners/edit/:id',
     meta: { label: 'Cleaners', icon: <UserOutlined /> },
+  },
+  {
+    name: 'company_cleaners',
+    list: '/company-cleaners',
+    create: '/company-cleaners/create',
+    meta: { label: 'Company cleaners', icon: <LinkOutlined /> },
   },
 ]
 
@@ -146,6 +155,10 @@ export default function App() {
               <Route index element={<CleanerList />} />
               <Route path="create" element={<CleanerCreate />} />
               <Route path="edit/:id" element={<CleanerEdit />} />
+            </Route>
+            <Route path="/company-cleaners">
+              <Route index element={<CompanyCleanerList />} />
+              <Route path="create" element={<CompanyCleanerCreate />} />
             </Route>
             <Route
               path="/users"
