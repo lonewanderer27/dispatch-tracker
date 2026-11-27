@@ -304,6 +304,6 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 2. `test(db): cover contacts constraints and access`
    Files: `supabase/tests/database/contacts.test.sql`
 3. `docs(plans): add T3C-B5 plan`
-   Files: `.claude/plans/T3C-B5-Contacts-Table.md`
+   Files: `.claude/plans/backend/T3C-B5-Contacts-Table.md`
 
 PR title: `feat(db): add contacts table` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.

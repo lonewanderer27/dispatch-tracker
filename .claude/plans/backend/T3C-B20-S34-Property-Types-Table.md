@@ -294,6 +294,6 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 3. `test(db): cover property_types constraints and access`
    Files: `supabase/tests/database/property_types.test.sql`
 4. `docs(plans): add T3C-B20 T3C-S34 plan`
-   Files: `.claude/plans/T3C-B20-S34-Property-Types-Table.md`
+   Files: `.claude/plans/backend/T3C-B20-S34-Property-Types-Table.md`
 
 PR title: `feat(db): add property_types table` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.
