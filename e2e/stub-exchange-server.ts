@@ -1,9 +1,11 @@
 // Tiny stub of the Frankfurter API so e2e runs are deterministic and offline.
-// Point the edge function at it with EXCHANGE_API_URL=http://127.0.0.1:4010
-// (see supabase/functions/.env.example).
+// The edge function runs in a container, so it reaches the stub by container name
+// (EXCHANGE_API_URL=http://exchange-stub:4010). See supabase/functions/.env.example.
 import { createServer } from 'node:http'
 
 const PORT = Number(process.env.EXCHANGE_STUB_PORT ?? 4010)
+// 0.0.0.0 when the stub runs in a container, so other containers on its network can reach it.
+const HOST = process.env.EXCHANGE_STUB_HOST ?? '127.0.0.1'
 
 const server = createServer((req, res) => {
   const url = new URL(req.url ?? '/', `http://127.0.0.1:${PORT}`)
@@ -25,6 +27,6 @@ const server = createServer((req, res) => {
   )
 })
 
-server.listen(PORT, '127.0.0.1', () => {
-  console.log(`exchange stub listening on http://127.0.0.1:${PORT}`)
+server.listen(PORT, HOST, () => {
+  console.log(`exchange stub listening on http://${HOST}:${PORT}`)
 })
