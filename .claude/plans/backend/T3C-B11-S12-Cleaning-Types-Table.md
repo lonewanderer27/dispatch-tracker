@@ -1,6 +1,6 @@
 # T3C-B11 T3C-S12 Add the cleaning_types table and seed it
 
-> **Status: PENDING REVIEW.** Not approved for implementation until the owner removes this line.
+> **Status: Approved and implemented** on `feat/T3C-B11-B13-S12-S14-Cleaning-Types-And-Statuses` (commits `072fe4b`, `26cf49f`, `25a199a`).
 >
 > **For the implementer:** follow the steps in order. Run every Gate command and compare its output with the Expect line. On any mismatch, or when the code does not match the Facts, **stop and report**; do not try to fix it. Do not `git add -A`, commit or push unless asked.
 
