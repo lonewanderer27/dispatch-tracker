@@ -526,7 +526,7 @@ Replace with: `  seed.sql                     local test users, todos and the fo
 Edit C. Find: `  pages/dashboard, pages/todos, pages/users`
 Replace with: `  pages/dashboard, pages/todos, pages/users, pages/companies`
 
-**Gate:** `pnpm exec prettier --check README.md .claude/plans/T3C-B7-S8-Companies-Table.md src/App.tsx src/types/db.ts src/pages/companies`
+**Gate:** `pnpm exec prettier --check README.md .claude/plans/backend/T3C-B7-S8-Companies-Table.md src/App.tsx src/types/db.ts src/pages/companies`
 **Expect:** `All matched files use Prettier code style!` If it lists a file, run `pnpm exec prettier --write` on **only that file**, then repeat.
 
 ### Step 9. Full gate
@@ -568,7 +568,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
    Files: `src/types/db.ts`, `src/pages/companies/CompanyList.tsx`, `src/pages/companies/CompanyCreate.tsx`, `src/pages/companies/CompanyEdit.tsx`, `src/App.tsx`
 5. `docs: add companies to the README layout`
    Files: `README.md`
-6. `docs(plans): add companies table plan`
-   Files: `.claude/plans/T3C-B7-S8-Companies-Table.md`
+6. `docs(plans): fix companies plan commit path`
+   Files: `.claude/plans/backend/T3C-B7-S8-Companies-Table.md`
 
 PR title: `feat(db): add companies table and seed` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.
