@@ -1,4 +1,4 @@
--- Local development seed. Test users only. NEVER run against a hosted project.
+-- Local development seed. Test users and reference data (companies). NEVER run against a hosted project.
 -- Passwords: admin@example.com / admin-password-123 , user@example.com / user-password-123 ,
 -- superadmin@example.com / superadmin-password-123
 
@@ -56,3 +56,11 @@ insert into public.todos (user_id, title, done) values
   ('22222222-2222-2222-2222-222222222222', 'Write the README', false),
   ('22222222-2222-2222-2222-222222222222', 'Ship the starter', false),
   ('11111111-1111-1111-1111-111111111111', 'Admin-only reminder', false);
+
+-- Reference data: the companies we operate under. Safe to run more than once.
+insert into public.companies (name) values
+  ('The Tidy Team'),
+  ('Total Home Care'),
+  ('Maids in Pink'),
+  ('Diamond MIP')
+on conflict (name) do nothing;
