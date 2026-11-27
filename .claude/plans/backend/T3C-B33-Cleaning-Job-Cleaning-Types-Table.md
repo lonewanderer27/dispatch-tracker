@@ -1,6 +1,6 @@
 # T3C-B33 Add the cleaning_job_cleaning_types table
 
-> **Status: PENDING REVIEW.** Not approved for implementation until the owner removes this line.
+> **Status: Approved and implemented** on `feat/T3C-B15-B16-B18-B19-B26-B27-B33-F35-Cleaning-Jobs` (commits `5c02d16`, `a5e5d8e`, with plan updates in `df938b5` and `e5218ff`).
 >
 > **For the implementer:** follow the steps in order. Run every Gate command and compare its output with the Expect line. On any mismatch, or when the code does not match the Facts, **stop and report**; do not try to fix it. Do not `git add -A`, commit or push unless asked.
 
@@ -260,6 +260,12 @@ git status --short
 ```
 
 **Expect:** only `supabase/migrations/0026_cleaning_job_cleaning_types.sql`, `supabase/tests/database/cleaning_job_cleaning_types.test.sql`, `src/types/database.types.ts` and this plan file. Anything else: stop and report.
+
+## As built (2026-11-27)
+
+- Migration and pgTAP test match the steps (commits `5c02d16`, `a5e5d8e`; this table's migration number is the one in this plan). `pnpm test:db` passes.
+- The plan was renumbered to follow `0019_properties.sql` (see `df938b5`), and the test fixtures gained a property because `cleaning_jobs.property_id` is required.
+- Not built: pages for this table, Playwright specs and Vitest component tests.
 
 ## Rollback
 
