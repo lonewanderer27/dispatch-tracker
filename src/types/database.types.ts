@@ -57,6 +57,34 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"cleaning_statuses": {
+                  Row: {
+                    "id": string,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: string,"name": string
+                  }
+                  Update: {
+                    "id"?: string,"name"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"cleaning_types": {
+                  Row: {
+                    "id": string,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: string,"name": string
+                  }
+                  Update: {
+                    "id"?: string,"name"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"clients": {
                   Row: {
                     "company_id": string,"id": string,"name": string

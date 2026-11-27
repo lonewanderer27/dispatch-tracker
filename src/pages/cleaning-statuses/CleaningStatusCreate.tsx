@@ -1,0 +1,26 @@
+import { Create, useForm } from '@refinedev/antd'
+import { Form, Input } from 'antd'
+import type { TablesInsert } from '@/types/db'
+
+export function CleaningStatusCreate() {
+  const { formProps, saveButtonProps } = useForm<TablesInsert<'cleaning_statuses'>>({
+    action: 'create',
+  })
+
+  return (
+    <Create saveButtonProps={saveButtonProps}>
+      <Form {...formProps} layout="vertical">
+        <Form.Item
+          label="Name"
+          name="name"
+          rules={[
+            { required: true, whitespace: true, message: 'Name is required' },
+            { max: 100, message: 'Keep it under 100 characters' },
+          ]}
+        >
+          <Input placeholder="e.g. Cancelled" autoFocus />
+        </Form.Item>
+      </Form>
+    </Create>
+  )
+}

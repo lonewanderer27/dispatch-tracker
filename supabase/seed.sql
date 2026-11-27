@@ -122,3 +122,22 @@ from (values
 join public.cleaners c on c.first_name = v.first_name and c.last_name = v.last_name
 join public.companies co on co.name in ('Total Home Care', 'The Tidy Team')
 on conflict (cleaner_id, company_id) do nothing;
+
+-- Reference data: cleaning types. Safe to run more than once.
+insert into public.cleaning_types (name) values
+  ('Regular'),
+  ('Deep'),
+  ('Move-In'),
+  ('Move-Out'),
+  ('Construction'),
+  ('1500+ Square Feet'),
+  ('Diamond Cleaning')
+on conflict (name) do nothing;
+
+-- Reference data: job statuses, in life-cycle order. Fixed ids: cleaning_jobs defaults to Booked.
+insert into public.cleaning_statuses (id, name) values
+  ('10000000-0000-0000-0000-000000000001', 'Booked'),
+  ('10000000-0000-0000-0000-000000000002', 'Confirmed'),
+  ('10000000-0000-0000-0000-000000000003', 'In Progress'),
+  ('10000000-0000-0000-0000-000000000004', 'Done')
+on conflict do nothing;

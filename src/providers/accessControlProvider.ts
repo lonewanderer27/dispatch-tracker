@@ -8,7 +8,14 @@ const SUPER_ADMIN_ONLY = new Set(['profiles'])
 
 // Resources every signed-in user may read but only an Admin or Super Admin may change. The
 // database enforces this through app_permissions; this only hides the create, edit and delete UI.
-const ADMIN_WRITE_ONLY = new Set(['clients', 'contacts', 'cleaners', 'company_cleaners'])
+const ADMIN_WRITE_ONLY = new Set([
+  'clients',
+  'contacts',
+  'cleaners',
+  'company_cleaners',
+  'cleaning_types',
+  'cleaning_statuses',
+])
 const READ_ACTIONS = new Set(['list', 'show'])
 
 export const accessControlProvider: AccessControlProvider = {
