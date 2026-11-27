@@ -2391,6 +2391,9 @@ export function CleaningJobList() {
           title="Scheduled Date"
           dataIndex="schedule"
           sorter
+          // The list starts newest first, so a click must go to oldest first, and switching to this
+          // column from another one starts newest first. The default order of the cycle is ascending.
+          sortDirections={['descend', 'ascend']}
           sortOrder={sortOrderFor('schedule')}
           render={(value: string) => formatSchedule(value, timeZone)}
         />
@@ -3032,6 +3035,25 @@ describe('CleaningJobList', () => {
     expect(lastQuery()).toMatchObject({ sortBy: 'schedule', sortDir: 'desc' })
   })
 
+  it('flips the Scheduled Date order on every click, starting from newest first', async () => {
+    render(<CleaningJobList />)
+    const header = screen.getByRole('columnheader', { name: 'Scheduled Date' })
+    await userEvent.click(header)
+    expect(lastQuery()).toMatchObject({ sortBy: 'schedule', sortDir: 'asc', page: 1 })
+    await userEvent.click(header)
+    expect(lastQuery()).toMatchObject({ sortBy: 'schedule', sortDir: 'desc', page: 1 })
+    await userEvent.click(header)
+    expect(lastQuery()).toMatchObject({ sortBy: 'schedule', sortDir: 'asc', page: 1 })
+  })
+
+  it('returns to newest first when another sort is switched back to Scheduled Date', async () => {
+    render(<CleaningJobList />)
+    await userEvent.click(screen.getByRole('columnheader', { name: 'Client Name' }))
+    expect(lastQuery()).toMatchObject({ sortBy: 'client', sortDir: 'asc' })
+    await userEvent.click(screen.getByRole('columnheader', { name: 'Scheduled Date' }))
+    expect(lastQuery()).toMatchObject({ sortBy: 'schedule', sortDir: 'desc' })
+  })
+
   it('does not offer sorting on feedback', () => {
     render(<CleaningJobList />)
     expect(screen.getByRole('columnheader', { name: 'Feedback' })).not.toHaveClass(
@@ -3186,6 +3208,24 @@ test.describe('Cleaning Jobs', () => {
     await expect(page.getByText('No jobs match these filters')).toBeVisible()
     await page.getByRole('button', { name: 'Clear filters' }).click()
     await expect(dataRows(page)).toHaveCount(10)
+  })
+
+  test('flips the Scheduled Date order on every click', async ({ page }) => {
+    await signIn(page, 'user@example.com', 'user-password-123')
+    await openCleaningJobs(page)
+
+    const header = page.getByRole('columnheader', { name: 'Scheduled Date' })
+    const firstDate = () => dataRows(page).first().locator('td').nth(3)
+    await expect(header).toHaveAttribute('aria-sort', 'descending')
+    const newest = await firstDate().textContent()
+
+    await header.click()
+    await expect(header).toHaveAttribute('aria-sort', 'ascending')
+    await expect(firstDate()).not.toHaveText(newest ?? '')
+
+    await header.click()
+    await expect(header).toHaveAttribute('aria-sort', 'descending')
+    await expect(firstDate()).toHaveText(newest ?? '')
   })
 
   test('sorts by a column and returns to newest first on the third click', async ({ page }) => {
