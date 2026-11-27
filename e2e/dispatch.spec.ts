@@ -55,6 +55,9 @@ test.describe('as an admin', () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
   test('creates, edits and deletes a client and its contacts', async ({ page }) => {
+    // A long journey (client and contact: create, edit, delete) on top of a seed with hundreds of
+    // clients; CI runs about twice as slow as a laptop, so give it more than the 30 s default.
+    test.setTimeout(90_000)
     // Unique per run, so reruns never collide with rows left by an earlier run.
     const stamp = Date.now()
     const client = `E2E Client ${stamp}`
