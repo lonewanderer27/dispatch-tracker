@@ -1,6 +1,7 @@
 import { CreateButton, DeleteButton, EditButton, List, useTable } from '@refinedev/antd'
 import { Space, Table } from 'antd'
 import type { CleaningStatus } from '@/types/db'
+import { ColorMotifTag } from '@/components/color-motif/ColorMotifTag'
 
 // Statuses have no sort column; their ids are fixed in life-cycle order (see 0012_cleaning_statuses.sql).
 export function CleaningStatusList() {
@@ -12,7 +13,13 @@ export function CleaningStatusList() {
   return (
     <List headerButtons={() => <CreateButton />}>
       <Table {...tableProps} rowKey="id">
-        <Table.Column<CleaningStatus> dataIndex="name" title="Name" />
+        <Table.Column<CleaningStatus>
+          dataIndex="name"
+          title="Name"
+          render={(name: string, record) => (
+            <ColorMotifTag motif={record.color_motif}>{name}</ColorMotifTag>
+          )}
+        />
         <Table.Column<CleaningStatus>
           title="Actions"
           render={(_, record) => (

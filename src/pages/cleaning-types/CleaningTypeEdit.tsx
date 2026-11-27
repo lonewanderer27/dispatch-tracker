@@ -2,6 +2,7 @@ import type { HttpError } from '@refinedev/core'
 import { Edit, useForm } from '@refinedev/antd'
 import { Form, Input } from 'antd'
 import type { CleaningType, TablesUpdate } from '@/types/db'
+import { ColorMotifSelect } from '@/components/color-motif/ColorMotifSelect'
 
 export function CleaningTypeEdit() {
   const { formProps, saveButtonProps, query } = useForm<
@@ -23,6 +24,13 @@ export function CleaningTypeEdit() {
           ]}
         >
           <Input />
+        </Form.Item>
+        <Form.Item
+          label="Color"
+          name="color_motif"
+          rules={[{ required: true, message: 'Color is required' }]}
+        >
+          <ColorMotifSelect />
         </Form.Item>
       </Form>
     </Edit>
