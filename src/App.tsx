@@ -19,6 +19,7 @@ import {
   ClockCircleOutlined,
   EnvironmentOutlined,
   ToolOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons'
 import { ConfigProvider, theme } from 'antd'
 import { Navigate, Outlet, Route, Routes } from 'react-router'
@@ -56,6 +57,7 @@ import { AreaEdit } from '@/pages/areas/AreaEdit'
 import { ItemList } from '@/pages/items/ItemList'
 import { ItemCreate } from '@/pages/items/ItemCreate'
 import { ItemEdit } from '@/pages/items/ItemEdit'
+import { CleaningJobList } from '@/pages/cleaning-jobs/CleaningJobList'
 import { UserList } from '@/pages/users/UserList'
 import { UserEdit } from '@/pages/users/UserEdit'
 
@@ -141,6 +143,11 @@ const resources: ResourceProps[] = [
     edit: '/items/edit/:id',
     meta: { label: 'Items', icon: <ToolOutlined /> },
   },
+  {
+    name: 'cleaning_jobs',
+    list: '/cleaning-jobs',
+    meta: { label: 'Cleaning Jobs', icon: <CalendarOutlined /> },
+  },
 ]
 
 export default function App() {
@@ -223,6 +230,9 @@ export default function App() {
               <Route index element={<ItemList />} />
               <Route path="create" element={<ItemCreate />} />
               <Route path="edit/:id" element={<ItemEdit />} />
+            </Route>
+            <Route path="/cleaning-jobs">
+              <Route index element={<CleaningJobList />} />
             </Route>
             <Route
               path="/users"
