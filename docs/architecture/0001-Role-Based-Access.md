@@ -19,8 +19,8 @@ ask the database; they do not decide who may do what.
 - `public.roles` holds three rows with fixed ids: Admin (`30000000-0000-0000-0000-000000000001`),
   User (`...0002`) and Super Admin (`...0003`).
 - `public.profiles.role_id` links every profile to one role. New profiles default to User.
-- `role_id` is column-protected: signed-in users can update only `profiles.display_name`. A role is
-  assigned only with direct database access.
+- `role_id` is column-protected: signed-in users can update only `profiles.display_name`. Only a
+  Super Admin can change a role, through a function (see 0002 User management).
 - Anonymous sign-in is off (`enable_anonymous_sign_ins = false` in `supabase/config.jsonc`). On
   hosted projects it is switched off in the Supabase dashboard.
 
@@ -55,5 +55,5 @@ ask the database; they do not decide who may do what.
 
 - A Super Admin can remove their own `app_permissions` rights. Only direct database access restores
   them.
-- Nothing in the app lets a user change a role.
+- Only a Super Admin can change a role, from the Users page (see 0002 User management).
 - Anyone who can register gets the User role and can read every table (`enable_signup` is `true`).

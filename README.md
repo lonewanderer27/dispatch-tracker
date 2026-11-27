@@ -31,7 +31,7 @@ Seeded local accounts (local only, never on a hosted project):
 | `user@example.com`       | `user-password-123`       | User        |
 | `superadmin@example.com` | `superadmin-password-123` | Super Admin |
 
-Architecture changes are documented, one numbered file each, in [docs/architecture](docs/architecture). Access control: [0001 Role-based access](docs/architecture/0001-Role-Based-Access.md).
+Architecture changes are documented, one numbered file each, in [docs/architecture](docs/architecture). Access control: [0001 Role-based access](docs/architecture/0001-Role-Based-Access.md). Users page: [0002 User management](docs/architecture/0002-User-Management.md).
 
 ## Scripts
 
@@ -61,6 +61,7 @@ supabase/
   migrations/0002_todo_stats.sql
   migrations/0003_roles.sql      roles (Admin, User), profiles.role_id
   migrations/0004_app_permissions.sql  Super Admin role, app_permissions, has_permission()
+  migrations/0005_user_admin.sql  is_super_admin(), admin_update_profile()
   seed.sql                     local test users and todos
   functions/exchange-rate/     edge function + Deno tests
   tests/database/              pgTAP tests
@@ -69,7 +70,8 @@ src/
   types/                       generated DB types + helpers (db.ts)
   providers/                   Refine data/live provider, auth provider
   features/integration/        data access + hooks for dashboard checks
-  pages/dashboard, pages/todos
+  features/users/              role ids and the Super Admin user update call
+  pages/dashboard, pages/todos, pages/users
 e2e/                           Playwright specs and the Frankfurter stub
 ```
 
@@ -93,5 +95,5 @@ e2e/                           Playwright specs and the Frankfurter stub
 
 - `todo_stats` is `security invoker`. Switching it to `security definer` would bypass RLS. The pgTAP isolation test guards against that.
 - Admins have an RLS override on `todos`, so for an admin `todo_stats` counts every user's todos, not only their own.
-- Users can update only `profiles.display_name`. `role_id` (Admin or User, from the `roles` table) is column-protected and can only be changed with direct DB access. Admins can read and write the dispatch tables; Users can only read them. Roles are Admin, User and Super Admin. The `app_permissions` table lists what each role may do per table (read, create, update, delete). Admin can modify every dispatch table but not `roles` or `app_permissions`; only Super Admin can modify those two. Anonymous sign-in is off.
+- Users can update only `profiles.display_name`. `role_id` (Admin or User, from the `roles` table) is column-protected: only a Super Admin can change it, from the Users page. Admins can read and write the dispatch tables; Users can only read them. Roles are Admin, User and Super Admin. The `app_permissions` table lists what each role may do per table (read, create, update, delete). Admin can modify every dispatch table but not `roles` or `app_permissions`; only Super Admin can modify those two. Anonymous sign-in is off.
 - The edge function runs in Docker. For offline e2e, `EXCHANGE_API_URL` points it at the stub; see `supabase/functions/.env.example`.
