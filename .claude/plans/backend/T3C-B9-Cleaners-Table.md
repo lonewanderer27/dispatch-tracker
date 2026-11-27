@@ -18,26 +18,28 @@ Source: sprint sheet `The Tidy Team - Digital Platforms Sprint - Sprint 2_ Nov-2
 4. Roles come from T3C-B0 (`.claude/plans/backend/T3C-B0-Users-Table.md`): `supabase/migrations/0003_roles.sql` creates `public.roles` (Admin id `30000000-0000-0000-0000-000000000001`, User id `30000000-0000-0000-0000-000000000002`) and replaces `profiles.role` with `profiles.role_id`. `public.is_admin()` is true when the caller's profile has the Admin role id. Policies of this table do not use it; they call `(select public.has_permission('<table>', '<action>'))`, which needs `0004_app_permissions.sql` (T3C-B0 phase 2: Super Admin role id `30000000-0000-0000-0000-000000000003`, `public.app_permissions`, `public.has_permission`). If `0004_app_permissions.sql` is missing, **stop and report**. If `0003_roles.sql` is missing, **stop and report**.
 5. Table pattern (`0001_init.sql`): `id uuid primary key default gen_random_uuid()`, `enable row level security`, `revoke all ... from anon, authenticated`, explicit `grant ... to authenticated`, then policies.
 6. `supabase/tests/database/` holds `rls.test.sql`, `seed.test.sql`, `todo_stats.test.sql` (and `roles.test.sql` and `companies.test.sql` once T3C-B0 and T3C-B7-S8 are implemented). `rls.test.sql` already asserts that every public table has RLS enabled.
+7. `package.json` script `db:reset` runs `db:types` (`supabase gen types typescript --local > src/types/database.types.ts`), so Step 3 regenerates the types with no separate `db:types` run.
 
 ## Decisions already made (do not reopen)
 
-- `middle_name` is nullable with no check (an empty string is allowed).
+- `middle_name` is nullable with no check (an empty string is allowed at the database). The create and edit forms trim it and save a blank value as `null`, so the UI never writes an empty string.
 - **Access (owner rule)**: a profile with the **Admin** role can read and write this table; a profile with the **User** role can only read it. Implemented as four policies (select, insert, update, delete) that call `has_permission(<table>, <action>)`, plus the table's three rows in `app_permissions` (Admin and Super Admin read and write, User reads only), seeded in the same migration. `anon` gets nothing. There is no per-user ownership on this data, so there is no user-isolation test.
 - **Columns are exactly those in the story**, in the story order. No `created_at` unless the story lists it.
 - **Required text columns** are `not null` and also reject blank or whitespace-only values (`char_length(trim(col)) > 0`).
-- **No UI** in this plan. Backend and seed stories only. Pages for this table are out of scope (see open question).
+- **UI included (added after the first draft).** Pages list, create and edit at `/cleaners`, in `src/pages/cleaners/`, following the companies pages. A User can read the list; create, edit and delete are hidden for them (`cleaners` is in `ADMIN_WRITE_ONLY` in `accessControlProvider.ts`), and the database enforces the same rule.
+- **Seed included (added after the first draft).** Ten cleaners in `supabase/seed.sql`, local only. The surnames are invented placeholders for testing. Replace them with the real names before any hosted use.
 
 ### Open questions (do not block)
 
-1. Pages (list, create, edit) for this table are not planned. Should they be added, as was done for companies?
+1. Resolved: pages were added after review (see Decisions).
 
 ## Out of scope
 
 - Every other table or story in the sprint sheet.
-- UI pages, Playwright e2e specs, Vitest component tests.
+- Playwright e2e specs and Vitest component tests for the cleaner pages. The pages were checked with typecheck, lint, the production build and a seed query. They have not been opened in a browser.
 - The role model beyond Admin, User and Super Admin.
 - Loading data into SIT or production.
-- `README.md` and `AGENTS.md` edits.
+- `AGENTS.md` edits. `README.md` changes only the layout line, to list the new page folders.
 
 ## Steps
 
@@ -51,6 +53,8 @@ git status --short && git switch -c feat/T3C-B9-Cleaners-Table && pnpm db:start
 
 **Gate:** `git branch --show-current && ls supabase/migrations`
 **Expect:** `feat/T3C-B9-Cleaners-Table`, then a migration list that ends at `0008_contacts.sql` (the file just before this plan's `0009`). If `git status --short` printed anything before the switch, or the list is different, stop and report.
+
+**As built:** the branch was renamed to `feat/T3C-B9-B10-Cleaners-And-Company-Cleaners`, because T3C-B10 is built on the same branch. The rest of this step was followed.
 
 ### Step 1. Migration (create file)
 
@@ -247,28 +251,58 @@ pnpm typecheck && pnpm lint
 git status --short
 ```
 
-**Expect:** only `supabase/migrations/0009_cleaners.sql`, `supabase/tests/database/cleaners.test.sql`, `src/types/database.types.ts` and this plan file. Anything else: stop and report.
+**Expect:** only `supabase/migrations/0009_cleaners.sql`, `supabase/tests/database/cleaners.test.sql`, `src/types/database.types.ts` and this plan file. Anything else: stop and report. This check runs before Steps 4 and 5. After them, the files named there are also expected.
+
+### Step 4. Access rule, routes and pages (added after the first draft)
+
+The contents are in the repo. The first draft was reviewed without them, so this plan names the files and what each one does.
+
+- `src/types/db.ts`: add `export type Cleaner = Tables<'cleaners'>`.
+- `src/providers/accessControlProvider.ts`: add `'cleaners'` to `ADMIN_WRITE_ONLY`.
+- `src/providers/accessControlProvider.test.ts`: add `'cleaners'` to the four `it.each` lists.
+- `src/pages/cleaners/CleanerList.tsx`, `CleanerCreate.tsx`, `CleanerEdit.tsx`: list sorted by last name, with the combined name, edit and delete. Create and edit forms require first and last name (trimmed, max 100). Middle name is optional and trimmed, and a blank value is saved as `null`.
+- `src/App.tsx`: icon `UserOutlined`, resource `cleaners` (`/cleaners`, create, edit), and the `/cleaners` routes.
+- `README.md`: the layout line lists `pages/cleaners`.
+
+**Gate:** `pnpm typecheck && pnpm lint && pnpm test`
+**Expect:** all exit 0. The `accessControlProvider` tests pass, including the `cleaners` cases.
+
+### Step 5. Seed (added after the first draft)
+
+- `supabase/seed.sql`: append a cleaners section after the contacts block. It inserts the ten cleaners with `where not exists`, so it is safe to run twice. The surnames are invented placeholders, listed in the file.
+
+**Gate:** `pnpm db:reset && pnpm exec supabase db query --local "select count(*) from public.cleaners"`
+**Expect:** `db:reset` exits 0. The count is `10`.
+
+**Gate:** run the cleaners section a second time through `psql` in the local DB container. The CLI cannot run a multi-statement file, so use the container.
+**Expect:** the section exits 0 and the count is still `10`.
 
 ## Rollback
 
-- Before commit: `git switch main && git branch -D feat/T3C-B9-Cleaners-Table`, then `pnpm db:reset`.
+- Before commit: do not delete the branch, because it also holds T3C-B10. To undo T3C-B9, undo T3C-B10 first (its Rollback section). Then remove `0009_cleaners.sql`, `cleaners.test.sql`, `src/pages/cleaners/`, the cleaner lines in `db.ts`, `App.tsx`, `accessControlProvider.ts` and its test, and `README.md`, plus the cleaners section of `seed.sql`. Then run `pnpm db:reset`.
 - After merge, if a hosted DB already has `0009_cleaners.sql`: add `0109_drop_cleaners.sql` containing `delete from public.app_permissions where resource = 'cleaners';` and `drop table public.cleaners;`. Never edit or delete an applied migration. Stop and ask first if other tables already reference `cleaners`.
 
 ## Conventional commits
 
-Branch: `feat/T3C-B9-Cleaners-Table` (from `main`). Stage explicit paths only. Each commit leaves the suites green. Every commit ends with:
+Branch: `feat/T3C-B9-B10-Cleaners-And-Company-Cleaners` (from `main`), shared with T3C-B10. Stage explicit paths only. Each commit leaves the suites green. Every commit ends with:
 
 ```
 Refs: T3C-B9
 
-Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Haiku 5.5 <noreply@anthropic.com>
 ```
 
 1. `feat(db): add cleaners table with role-based RLS`
    Files: `supabase/migrations/0009_cleaners.sql`, `src/types/database.types.ts`
 2. `test(db): cover cleaners constraints and access`
    Files: `supabase/tests/database/cleaners.test.sql`
-3. `docs(plans): add T3C-B9 plan`
+3. `feat(web): add cleaners pages and admin-only changes`
+   Files: `src/pages/cleaners/`, `src/types/db.ts`, `src/App.tsx`, `src/providers/accessControlProvider.ts`, `src/providers/accessControlProvider.test.ts`, `README.md`
+4. `feat(db): seed the cleaners roster`
+   Files: `supabase/seed.sql` (cleaners section only)
+5. `docs(plans): add T3C-B9 plan`
    Files: `.claude/plans/backend/T3C-B9-Cleaners-Table.md`
+
+Shared files: `src/types/db.ts`, `src/App.tsx`, `src/providers/accessControlProvider.ts`, its test, `README.md` and `supabase/seed.sql` also carry T3C-B10 changes. Split them by hunk with `git add -p`, or commit both tickets together.
 
 PR title: `feat(db): add cleaners table` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.
