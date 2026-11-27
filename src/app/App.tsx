@@ -1,12 +1,12 @@
 import { Authenticated, Refine } from '@refinedev/core'
-import { AuthPage, ThemedLayout, ThemedTitle, useNotificationProvider } from '@refinedev/antd'
+import { AuthPage, ThemedLayout, useNotificationProvider } from '@refinedev/antd'
 import '@refinedev/antd/dist/reset.css'
 import routerProvider, {
   CatchAllNavigate,
   DocumentTitleHandler,
   UnsavedChangesNotifier,
 } from '@refinedev/react-router'
-import { ConfigProvider, theme } from 'antd'
+import { ConfigProvider } from 'antd'
 import { Fragment } from 'react'
 import { Navigate, Outlet, Route, Routes } from 'react-router'
 import { features } from '@/app/features'
@@ -14,12 +14,14 @@ import { RoleOutlet } from '@/app/RoleGate'
 import { accessControlProvider } from '@/app/providers/accessControlProvider'
 import { authProvider } from '@/app/providers/authProvider'
 import { refineDataProvider, refineLiveProvider } from '@/app/providers/dataProvider'
+import { BrandTitle } from '@/shared/brand/BrandTitle'
+import { brandTheme } from '@/shared/brand/theme'
 
 const resources = features.map((feature) => feature.resource)
 
 export default function App() {
   return (
-    <ConfigProvider theme={{ algorithm: [theme.defaultAlgorithm] }}>
+    <ConfigProvider theme={brandTheme}>
       <Refine
         dataProvider={{ default: refineDataProvider }}
         liveProvider={refineLiveProvider}
@@ -39,7 +41,7 @@ export default function App() {
           <Route
             element={
               <Authenticated key="authenticated-inner" fallback={<CatchAllNavigate to="/login" />}>
-                <ThemedLayout Title={ThemedTitle}>
+                <ThemedLayout Title={BrandTitle}>
                   <div className="app-content">
                     <RoleOutlet />
                   </div>
@@ -59,8 +61,14 @@ export default function App() {
               </Authenticated>
             }
           >
-            <Route path="/login" element={<AuthPage type="login" />} />
-            <Route path="/register" element={<AuthPage type="register" />} />
+            <Route
+              path="/login"
+              element={<AuthPage type="login" title={<BrandTitle collapsed={false} />} />}
+            />
+            <Route
+              path="/register"
+              element={<AuthPage type="register" title={<BrandTitle collapsed={false} />} />}
+            />
           </Route>
         </Routes>
         <UnsavedChangesNotifier />
