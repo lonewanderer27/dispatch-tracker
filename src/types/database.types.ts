@@ -43,6 +43,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"companies": {
+                  Row: {
+                    "id": string,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: string,"name": string
+                  }
+                  Update: {
+                    "id"?: string,"name"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"profiles": {
                   Row: {
                     "created_at": string,"display_name": string,"id": string,"role_id": string
