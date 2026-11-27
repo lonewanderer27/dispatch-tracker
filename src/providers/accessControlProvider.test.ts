@@ -32,26 +32,27 @@ describe('accessControlProvider', () => {
     expect(signedOut.can).toBe(false)
   })
 
-  it('lets a User read clients without asking who they are', async () => {
-    getIdentity.mockClear()
-    const res = await accessControlProvider.can({ resource: 'clients', action: 'list' })
-    expect(res).toEqual({ can: true })
-    expect(getIdentity).not.toHaveBeenCalled()
-  })
+  it.each(['clients', 'contacts'])(
+    'lets a User read %s without asking who they are',
+    async (resource) => {
+      getIdentity.mockClear()
+      const res = await accessControlProvider.can({ resource, action: 'list' })
+      expect(res).toEqual({ can: true })
+      expect(getIdentity).not.toHaveBeenCalled()
+    },
+  )
 
-  it('lets an Admin change clients', async () => {
+  it.each(['clients', 'contacts'])('lets an Admin change %s', async (resource) => {
     getIdentity.mockResolvedValue({ id: 'u3', roleId: ADMIN_ROLE_ID })
     for (const action of ['create', 'edit', 'delete']) {
-      expect(await accessControlProvider.can({ resource: 'clients', action })).toEqual({
-        can: true,
-      })
+      expect(await accessControlProvider.can({ resource, action })).toEqual({ can: true })
     }
   })
 
-  it('denies a User changing clients', async () => {
+  it.each(['clients', 'contacts'])('denies a User changing %s', async (resource) => {
     getIdentity.mockResolvedValue({ id: 'u2', roleId: USER_ROLE_ID })
     for (const action of ['create', 'edit', 'delete']) {
-      const res = await accessControlProvider.can({ resource: 'clients', action })
+      const res = await accessControlProvider.can({ resource, action })
       expect(res.can).toBe(false)
     }
   })
