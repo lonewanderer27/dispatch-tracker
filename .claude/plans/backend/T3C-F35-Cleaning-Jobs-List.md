@@ -1,6 +1,6 @@
 # T3C-F35 Cleaning Jobs list page, time zone setting, cleaning job functions and pill colours
 
-> **Status: Phase 1 (Steps 0 to 11 and 9a) approved and implemented** on `feat/T3C-B15-B16-B18-B19-B26-B27-B33-F35-Cleaning-Jobs` (commits `e96c7e1`, `1e55628`, `eafe582`, `d62a47e`; seed `6de699a`, `af712e8`; test fixes `15eee50`, `71a288d`; Step 9a tests `ab6d39b`, `3811b35`, `1da0136`; docs `3c306eb`). **Phase 2 (pill colours, Steps 12 to 23) is PENDING REVIEW** and not implemented: it is not approved until the owner removes this line.
+> **Status: Approved and implemented** (Phase 1, Steps 0 to 11 and 9a, and Phase 2, Steps 12 to 23) on `feat/T3C-B15-B16-B18-B19-B26-B27-B33-F35-Cleaning-Jobs` (commits `e96c7e1`, `1e55628`, `eafe582`, `d62a47e`; seed `6de699a`, `af712e8`; test fixes `15eee50`, `71a288d`; Step 9a tests `ab6d39b`, `3811b35`, `1da0136`; docs `3c306eb`). Phase 2 (pill colours): commits `a7e078c`, `879706b`, `881d585`, `f7b66a6`, `1dd41d0`, `559a945`, `3defb5f`; the company colours were set by the owner from the logos (The Tidy Team `red`, Total Home Care `cyan`, Maids in Pink `magenta`, Diamond MIP `blue`). The Step 22 manual check in a browser has not been done.
 >
 > **For the implementer:** follow the steps in order. Run every Gate command and compare its output with the Expect line. On any mismatch, or when the code does not match the Facts, **stop and report**; do not try to fix it. Do not `git add -A`, commit or push unless asked.
 >
@@ -3315,7 +3315,7 @@ Source: owner request in conversation (2026-11-27): "add new column called color
 - **One list per side, compared by a test.** The database list is the function `public.color_motifs()` (immutable, `search_path = ''`, executable by `authenticated` because a check constraint runs with the writer's rights). The web list is `COLOR_MOTIFS` in `src/features/color-motif/colorMotif.ts`. The comparison: `colorMotif.test.ts` (Vitest, no database) reads every migration with `import.meta.glob`, takes the `array[...]` of the newest one that runs `create [or replace] function public.color_motifs()`, and expects it to equal `COLOR_MOTIFS` in order; `color_motifs.test.sql` (pgTAP) expects `public.color_motifs()` to equal the same literal and checks that all three constraints call the function. A change on one side only fails one of the two suites.
 - **Who can change a colour.** No new policy or grant: the existing update policies already allow Admin and Super Admin and filter out a User. pgTAP proves both.
 - **`get_cleaning_jobs` (owner and reviewer).** Migration `0029` drops and recreates it with the same 14 arguments, filters, sorts and paging. It adds `company_color` and `status_color` (after `company_name`), and each `cleaning_types` item becomes `{"name": ..., "color": ...}` ordered by name. The cleaning type sort still uses the names. Its revoke and grant are given again (a drop removes them). `0028` is not edited.
-- **Seed colours.** Companies: The Tidy Team `geekblue`, Total Home Care `volcano`, Maids in Pink `magenta`, Diamond MIP `purple`. Cleaning types: Regular `lime`, Deep `purple`, Move-In `cyan`, Move-Out `orange`, Construction `gold`, 1500+ Square Feet `geekblue`, Diamond Cleaning `magenta`. Statuses by life cycle: Booked `blue`, Confirmed `cyan`, In Progress `orange`, Done `green`. Distinct within each resource; `red` and `default` are left free. Companies and types use `on conflict (name) do update set color_motif = excluded.color_motif`; statuses use `on conflict (id) do update ...` because their ids are fixed and `cleaning_jobs` defaults to the Booked id (a name conflict target would fail on an id clash). A re-run of the seed puts the seeded colours back.
+- **Seed colours.** Companies, chosen by the owner from the logos (2026-11-27): The Tidy Team `red` (the palette has no maroon, and `red` is the closest preset to the maroon the owner asked for), Total Home Care `cyan` (teal), Maids in Pink `magenta` (pink), Diamond MIP `blue` (the blue lettering of the Diamond Cleaning logo). Cleaning types: Regular `lime`, Deep `purple`, Move-In `cyan`, Move-Out `orange`, Construction `gold`, 1500+ Square Feet `geekblue`, Diamond Cleaning `magenta`. Statuses by life cycle: Booked `blue`, Confirmed `cyan`, In Progress `orange`, Done `green`. Distinct within each resource; `red` and `default` are left free. Companies and types use `on conflict (name) do update set color_motif = excluded.color_motif`; statuses use `on conflict (id) do update ...` because their ids are fixed and `cleaning_jobs` defaults to the Booked id (a name conflict target would fail on an id clash). A re-run of the seed puts the seeded colours back.
 - **Web structure.** The palette module lives in a shared `src/features/color-motif/` (not `cleaning-jobs/`) because four resources use it. `ColorMotifTag` (the only place a pill colour is drawn; unknown values fall back to `default`) and `ColorMotifSelect` (the "Color" field; each option is the pill itself with its name) live in `src/components/color-motif/`. `src/pages/` keeps only Create, Edit and List pages.
 - **Forms.** Each Create page gets a required "Color" item with `initialValue` `default`, so a new row always sends `color_motif`. Each Edit page gets the same item without an initial value (the record supplies it). A stored value the palette does not know shows as "Grey (default)".
 - **Resource lists.** The Name column of the companies, cleaning types and cleaning statuses lists renders the name as its pill (four lines each), so an Admin sees the result of a change at once.
@@ -3632,10 +3632,10 @@ Replace with:
 -- Reference data: the companies we operate under, each with its pill colour (0029_color_motifs.sql).
 -- Safe to run more than once: a re-run resets the colours to these values.
 insert into public.companies (name, color_motif) values
-  ('The Tidy Team', 'geekblue'),
-  ('Total Home Care', 'volcano'),
+  ('The Tidy Team', 'red'),
+  ('Total Home Care', 'cyan'),
   ('Maids in Pink', 'magenta'),
-  ('Diamond MIP', 'purple')
+  ('Diamond MIP', 'blue')
 on conflict (name) do update set color_motif = excluded.color_motif;
 ```
 
@@ -3879,7 +3879,7 @@ select lives_ok(
 select results_eq(
   $$select name, color_motif from public.companies
     where name in ('The Tidy Team', 'Total Home Care', 'Maids in Pink', 'Diamond MIP') order by name$$,
-  $$values ('Diamond MIP', 'purple'), ('Maids in Pink', 'magenta'), ('The Tidy Team', 'geekblue'), ('Total Home Care', 'volcano')$$,
+  $$values ('Diamond MIP', 'blue'), ('Maids in Pink', 'magenta'), ('The Tidy Team', 'red'), ('Total Home Care', 'cyan')$$,
   'the seeded companies have their colours'
 );
 select results_eq(
@@ -4997,7 +4997,7 @@ Replace with:
     for (let i = 0; i < rows; i++) {
       const cells = dataRows(page).nth(i).locator('td')
       await expect(cells.nth(1).locator('.ant-tag')).toHaveClass(
-        /ant-tag-(geekblue|volcano|magenta|purple)/,
+        /ant-tag-(red|cyan|magenta|blue)/,
       )
       await expect(cells.nth(2).locator('.ant-tag')).toHaveClass(/ant-tag-(blue|cyan|orange|green)/)
       await expect(cells.nth(2).locator('.ant-tag')).toHaveText(
