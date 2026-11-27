@@ -8,12 +8,14 @@ Sample domain: `profiles` and `todos`, with per-user RLS, realtime updates, an R
 
 - Node 24+, pnpm 10
 - Docker (OrbStack or Docker Desktop) running. Local Supabase needs it.
-- Deno 2 (for the edge function tests)
+- Deno 2 (for the edge function tests). Install with `brew install deno` on macOS, or see [deno.com](https://deno.com/manual/getting_started/installation). Check with `deno --version`.
+- Playwright Chromium (for the e2e tests). Installed with the setup step below. It is a separate browser download, not part of `pnpm install`.
 
 ## Setup
 
 ```bash
 pnpm install
+pnpm exec playwright install chromium  # one-time browser download for the e2e tests (repeat after a Playwright upgrade)
 pnpm db:start                 # starts the local Supabase stack (first run pulls images)
 pnpm exec supabase status     # copy API URL and anon key into .env.local
 cp .env.example .env.local    # then fill VITE_SUPABASE_ANON_KEY
@@ -25,8 +27,8 @@ Seeded local accounts (local only, never on a hosted project):
 
 | Email               | Password             | Role  |
 | ------------------- | -------------------- | ----- |
-| `admin@example.com` | `admin-password-123` | admin |
-| `user@example.com`  | `user-password-123`  | user  |
+| `admin@example.com` | `admin-password-123` | Admin |
+| `user@example.com`  | `user-password-123`  | User  |
 
 ## Scripts
 
