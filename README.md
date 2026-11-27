@@ -19,7 +19,7 @@ pnpm exec playwright install chromium  # one-time browser download for the e2e t
 pnpm db:start                 # starts the local Supabase stack (first run pulls images)
 pnpm exec supabase status     # copy API URL and anon key into .env.local
 cp .env.example .env.local    # then fill VITE_SUPABASE_ANON_KEY
-pnpm db:reset                 # applies migrations, seeds users, regenerates types
+pnpm db:reset                 # applies migrations, loads supabase/seeds (users, reference data, roster, demo jobs), regenerates types
 pnpm dev                      # http://127.0.0.1:5173
 ```
 
@@ -65,7 +65,7 @@ supabase/
   migrations/0006_companies.sql  companies (brands), role-based RLS
   migrations/0007_clients.sql  clients (each booked against a company), role-based RLS
   migrations/0008_contacts.sql contacts (name and number per client), role-based RLS
-  seed.sql                     local test users, todos, the four companies, and client/contact scenarios
+  seeds/                       local dev data, loaded in order by db:reset: 01_users, 02_reference_data, 03_roster, 04_cleaning_jobs (anonymised demo jobs)
   functions/exchange-rate/     edge function + Deno tests
   tests/database/              pgTAP tests
 src/
