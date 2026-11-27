@@ -2578,6 +2578,13 @@ Run `pnpm dev`, sign in, open **Cleaning Jobs** in the sidebar. Use a database t
 
 Report what you saw.
 
+### Step 11. Document the architecture (create files)
+
+The decisions in this plan are architectural (data access, the stored time zone and the seed). They are written up in `docs/architecture/0004-Cleaning-Jobs-List-Function.md`, `0005-Preferred-Time-Zone.md` and `0006-Local-Seed-Data.md`; the job tables are in `0003-Cleaning-Job-Data-Model.md`. Each starts with the ticket, the plan path, the date and the status, and `README.md` links to all four.
+
+**Gate:** `ls docs/architecture`
+**Expect:** the files `0003` to `0006` are listed. `README.md` links to them.
+
 ## Rollback
 
 - Before commit: `git switch main && git branch -D feat/T3C-F35-Cleaning-Jobs-List`, then `pnpm db:reset`.
