@@ -10,6 +10,7 @@ import { ConfigProvider, theme } from 'antd'
 import { Fragment } from 'react'
 import { Navigate, Outlet, Route, Routes } from 'react-router'
 import { features } from '@/app/features'
+import { RoleOutlet } from '@/app/RoleGate'
 import { accessControlProvider } from '@/app/providers/accessControlProvider'
 import { authProvider } from '@/app/providers/authProvider'
 import { refineDataProvider, refineLiveProvider } from '@/app/providers/dataProvider'
@@ -40,7 +41,7 @@ export default function App() {
               <Authenticated key="authenticated-inner" fallback={<CatchAllNavigate to="/login" />}>
                 <ThemedLayout Title={ThemedTitle}>
                   <div className="app-content">
-                    <Outlet />
+                    <RoleOutlet />
                   </div>
                 </ThemedLayout>
               </Authenticated>

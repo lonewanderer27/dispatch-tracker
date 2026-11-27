@@ -16,6 +16,9 @@ values
   ('aaaaaaaa-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000000000',
    'authenticated', 'authenticated', 'alice@test.local', '', '{}', '{}', now(), now(), '', '', '', '');
 
+-- A sign-up has no role (0040). These tests were written for a User, so give the test users that role.
+update public.profiles set role_id = '30000000-0000-0000-0000-000000000002' where role_id is null;
+
 -- Fixture rows, inserted as the table owner (bypasses RLS).
 --   J1 2026-12-01 client Xavier (Alpha Co): cleaners Zed Adams + Amy Brown, types Test Deep + Test Move-Out,
 --      feedback 5 "Great clean" and 3 "Missed oven"

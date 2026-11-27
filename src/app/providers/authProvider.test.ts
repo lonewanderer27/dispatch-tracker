@@ -96,6 +96,31 @@ describe('authProvider', () => {
     })
   })
 
+  it('getIdentity reports no role for a profile without one', async () => {
+    auth.getUser.mockResolvedValue({
+      data: { user: { id: 'u2', email: 'n@b.co' } },
+    })
+    maybeSingle.mockResolvedValue({
+      data: { display_name: '', role_id: null, roles: null },
+      error: null,
+    })
+    expect(await authProvider.getIdentity()).toEqual({
+      id: 'u2',
+      email: 'n@b.co',
+      name: 'n@b.co',
+      role: null,
+      roleId: null,
+    })
+  })
+
+  it('getIdentity never falls back to a role when the profile is missing', async () => {
+    auth.getUser.mockResolvedValue({
+      data: { user: { id: 'u3', email: 'm@b.co' } },
+    })
+    maybeSingle.mockResolvedValue({ data: null, error: null })
+    expect(await authProvider.getIdentity()).toMatchObject({ role: null, roleId: null })
+  })
+
   it('getIdentity returns null when signed out', async () => {
     auth.getUser.mockResolvedValue({ data: { user: null } })
     expect(await authProvider.getIdentity()).toBeNull()

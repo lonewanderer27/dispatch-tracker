@@ -45,7 +45,7 @@ select is(
   'the roles have their fixed ids'
 );
 
--- 5-6: profiles.role is gone; a new profile defaults to the User role.
+-- 5-6: profiles.role is gone; a new profile has no role (0040).
 select is(
   (select count(*) from information_schema.columns
     where table_schema = 'public' and table_name = 'profiles' and column_name = 'role'),
@@ -54,17 +54,20 @@ select is(
 );
 select is(
   (select role_id from public.profiles where id = 'aaaaaaaa-0000-0000-0000-00000000000a'),
-  '30000000-0000-0000-0000-000000000002'::uuid,
-  'a new profile defaults to the User role'
+  null::uuid,
+  'a new profile has no role'
 );
+-- The tests below need Alice to be a User, as before sign-ups had no role.
+update public.profiles set role_id = '30000000-0000-0000-0000-000000000002'
+  where id = 'aaaaaaaa-0000-0000-0000-00000000000a';
 
 -- 7-12: constraints (as owner).
-select throws_ok(
+select lives_ok(
   $$update public.profiles set role_id = null where id = 'aaaaaaaa-0000-0000-0000-00000000000a'$$,
-  '23502',
-  null,
-  'profiles.role_id is required'
+  'profiles.role_id may be empty'
 );
+update public.profiles set role_id = '30000000-0000-0000-0000-000000000002'
+  where id = 'aaaaaaaa-0000-0000-0000-00000000000a';
 select throws_ok(
   $$update public.profiles set role_id = '99999999-9999-9999-9999-999999999999' where id = 'aaaaaaaa-0000-0000-0000-00000000000a'$$,
   '23503',

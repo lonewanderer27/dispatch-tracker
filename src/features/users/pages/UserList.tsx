@@ -23,7 +23,7 @@ export function UserList() {
           title="Role"
           render={(_, record) => (
             <Tag color={record.role_id === SUPER_ADMIN_ROLE_ID ? 'red' : 'default'}>
-              {record.roles?.name ?? 'Unknown'}
+              {record.role_id === null ? 'No role' : (record.roles?.name ?? 'Unknown')}
             </Tag>
           )}
         />

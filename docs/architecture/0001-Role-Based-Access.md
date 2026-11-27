@@ -57,3 +57,13 @@ ask the database; they do not decide who may do what.
   them.
 - Only a Super Admin can change a role, from the Users page (see 0002 User management).
 - Anyone who can register gets the User role and can read every table (`enable_signup` is `true`).
+
+## Sign-ups have no role (0040)
+
+- Ticket: T3C-B39. Plan: `.claude/plans/T3C-B39-Backend-Signup-No-Default-Role.md`. Date: 2026-11-27.
+- `profiles.role_id` is empty for a new sign-up (no default, not required). Nothing invents a role. Existing users keep theirs.
+- `has_permission()` is false for a user with no role, so the dispatch tables, `roles` and `app_permissions` show them nothing. The four own-row policies of `todos` now call `has_permission('todos', ...)` too, so even their own todos are hidden. A user with no role can still read and rename their own profile row, because the app needs it to know who they are.
+- The web app replaces every page with "Your account has no access yet" and a Sign out button for such a user (`RoleOutlet`, `src/app/RoleGate.tsx`). It fails closed. The database is what enforces the rule.
+- A Super Admin gives a role on the Users page (`admin_update_profile`). The list shows "No role" for new sign-ups.
+- Public sign-up stays on. In the hosted project **Confirm email must be on**, so nobody can sign up with an address they do not own.
+- Known limits: nobody is told when someone signs up; a person with a password and a role can use the API directly (not only the web app).
