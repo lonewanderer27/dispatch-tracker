@@ -12,8 +12,8 @@ Source: sprint sheet `The Tidy Team - Digital Platforms Sprint - Sprint 2_ Nov-2
 
 ## Facts (verified 2026-11-27)
 
-1. Branch is `main`. Migrations are numbered `NNNN_name.sql`. This plan adds `supabase/migrations/0017_cleaning_feedbacks.sql`, so migrations up to `0016` must already exist. Plans are applied in migration order: roles is `0003`, app_permissions is `0004` and user admin is `0005` (T3C-B0), companies is `0006` (`.claude/plans/backend/T3C-B7-S8-Companies-Table.md`).
-2. Required earlier migrations (plan that creates each): `0003_roles.sql` and `0004_app_permissions.sql` (T3C-B0); `0013_cleaning_jobs.sql` (T3C-B15). If any is missing, **stop and report**.
+1. Branch is `main`. Migrations are numbered `NNNN_name.sql`. This plan adds `supabase/migrations/0025_cleaning_feedbacks.sql`, so migrations up to `0024` must already exist. Plans are applied in migration order: roles is `0003`, app_permissions is `0004` and user admin is `0005` (T3C-B0), companies is `0006` (`.claude/plans/backend/T3C-B7-S8-Companies-Table.md`).
+2. Required earlier migrations (plan that creates each): `0003_roles.sql` and `0004_app_permissions.sql` (T3C-B0); `0022_cleaning_jobs.sql` (T3C-B15). If any is missing, **stop and report**.
 3. Table `public.cleaning_feedbacks` does not exist yet, and `src/types/database.types.ts` has no `cleaning_feedbacks` entry. That file is generated; never hand-edit it.
 4. Roles come from T3C-B0 (`.claude/plans/backend/T3C-B0-Users-Table.md`): `supabase/migrations/0003_roles.sql` creates `public.roles` (Admin id `30000000-0000-0000-0000-000000000001`, User id `30000000-0000-0000-0000-000000000002`) and replaces `profiles.role` with `profiles.role_id`. `public.is_admin()` is true when the caller's profile has the Admin role id. Policies of this table do not use it; they call `(select public.has_permission('<table>', '<action>'))`, which needs `0004_app_permissions.sql` (T3C-B0 phase 2: Super Admin role id `30000000-0000-0000-0000-000000000003`, `public.app_permissions`, `public.has_permission`). If `0004_app_permissions.sql` is missing, **stop and report**. If `0003_roles.sql` is missing, **stop and report**.
 5. Table pattern (`0001_init.sql`): `id uuid primary key default gen_random_uuid()`, `enable row level security`, `revoke all ... from anon, authenticated`, explicit `grant ... to authenticated`, then policies.
@@ -25,7 +25,7 @@ Source: sprint sheet `The Tidy Team - Digital Platforms Sprint - Sprint 2_ Nov-2
 - Not unique per job: a job may have more than one feedback row (the story does not limit it).
 - The rating range 0 to 5 is inclusive.
 - **Access (owner rule)**: a profile with the **Admin** role can read and write this table; a profile with the **User** role can only read it. Implemented as four policies (select, insert, update, delete) that call `has_permission(<table>, <action>)`, plus the table's three rows in `app_permissions` (Admin and Super Admin read and write, User reads only), seeded in the same migration. `anon` gets nothing. There is no per-user ownership on this data, so there is no user-isolation test.
-- **Columns are exactly those in the story**, in the story order. No `created_at` unless the story lists it.
+- **Columns are those in the story**, in the story order, plus `created_at timestamptz not null default now()` as the last column (added by the owner on 2026-11-27; the story does not list it). The list page and the feedback function use it.
 - **Required text columns** are `not null` and also reject blank or whitespace-only values (`char_length(trim(col)) > 0`).
 - **No UI** in this plan. Backend and seed stories only. Pages for this table are out of scope (see open question).
 
@@ -53,20 +53,21 @@ git status --short && git switch -c feat/T3C-B19-Cleaning-Feedbacks-Table && pnp
 ```
 
 **Gate:** `git branch --show-current && ls supabase/migrations`
-**Expect:** `feat/T3C-B19-Cleaning-Feedbacks-Table`, then a migration list that ends at `0016_cleaning_job_assignments.sql` (the file just before this plan's `0017`). If `git status --short` printed anything before the switch, or the list is different, stop and report.
+**Expect:** `feat/T3C-B19-Cleaning-Feedbacks-Table`, then a migration list that ends at `0024_cleaning_job_assignments.sql` (the file just before this plan's `0025`). If `git status --short` printed anything before the switch, or the list is different, stop and report.
 
 ### Step 1. Migration (create file)
 
-Create `supabase/migrations/0017_cleaning_feedbacks.sql` with exactly this content:
+Create `supabase/migrations/0025_cleaning_feedbacks.sql` with exactly this content:
 
 ```sql
--- 0017_cleaning_feedbacks: ratings and comments captured after a clean.
+-- 0025_cleaning_feedbacks: ratings and comments captured after a clean.
 
 create table public.cleaning_feedbacks (
   id              uuid primary key default gen_random_uuid(),
   cleaning_job_id uuid not null references public.cleaning_jobs (id) on delete cascade,
   rating          integer not null check (rating between 0 and 5),
-  feedback        text
+  feedback        text,
+  created_at      timestamptz not null default now()
 );
 
 create index cleaning_feedbacks_cleaning_job_id_idx on public.cleaning_feedbacks (cleaning_job_id);
@@ -112,7 +113,7 @@ Create `supabase/tests/database/cleaning_feedbacks.test.sql` with exactly this c
 -- Run with: pnpm test:db   (supabase test db)
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(17);
 
 -- Fixed test identities. The whole file runs in one transaction and rolls back.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
@@ -129,8 +130,11 @@ update public.profiles set role_id = '30000000-0000-0000-0000-000000000001' wher
 -- Fixture rows, inserted as the table owner (bypasses RLS).
 insert into public.companies (id, name) values ('c0000000-0000-0000-0000-000000000001', 'Test Co');
 insert into public.clients (id, company_id, name) values ('c1000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001', 'Test Client');
-insert into public.cleaning_jobs (id, schedule, client_id, est_hours, cleaners_needed, rate)
-values ('c3000000-0000-0000-0000-000000000001', '2026-12-01 09:00:00+00', 'c1000000-0000-0000-0000-000000000001', 2, 1, 50.00);
+insert into public.property_types (id, name) values ('c5000000-0000-0000-0000-000000000001', 'Test Property Type');
+insert into public.properties (id, client_id, property_type_id, address_line_1, city, province_state, postal_code, country_code)
+values ('c6000000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-000000000001', 'c5000000-0000-0000-0000-000000000001', '1 Test St', 'Testville', 'NSW', '2000', 'AU');
+insert into public.cleaning_jobs (id, schedule, client_id, property_id, est_hours, cleaners_needed, rate)
+values ('c3000000-0000-0000-0000-000000000001', '2026-12-01 09:00:00+00', 'c1000000-0000-0000-0000-000000000001', 'c6000000-0000-0000-0000-000000000001', 2, 1, 50.00);
 
 select ok(
   (select relrowsecurity from pg_class where oid = 'public.cleaning_feedbacks'::regclass),
@@ -240,6 +244,11 @@ select throws_ok(
   'cleaning_job_id must exist in cleaning_jobs'
 );
 
+select ok(
+  (select bool_and(created_at is not null) from public.cleaning_feedbacks),
+  'created_at is filled in automatically'
+);
+
 select * from finish();
 rollback;
 ```
@@ -250,13 +259,13 @@ rollback;
 pnpm db:reset && grep -c "cleaning_feedbacks" src/types/database.types.ts
 ```
 
-**Expect:** `db:reset` exits 0 with no SQL error and applies `0017_cleaning_feedbacks.sql`; the `grep` prints a number greater than `0`.
+**Expect:** `db:reset` exits 0 with no SQL error and applies `0025_cleaning_feedbacks.sql`; the `grep` prints a number greater than `0`.
 
 ```bash
 pnpm test:db
 ```
 
-**Expect:** every file reports `ok`, the summary ends with `Result: PASS`, and `cleaning_feedbacks.test.sql` runs 16 tests. If a test fails, stop and report; do not edit the test or the migration to make it pass.
+**Expect:** every file reports `ok`, the summary ends with `Result: PASS`, and `cleaning_feedbacks.test.sql` runs 17 tests. If a test fails, stop and report; do not edit the test or the migration to make it pass.
 
 ```bash
 pnpm typecheck && pnpm lint
@@ -268,12 +277,12 @@ pnpm typecheck && pnpm lint
 git status --short
 ```
 
-**Expect:** only `supabase/migrations/0017_cleaning_feedbacks.sql`, `supabase/tests/database/cleaning_feedbacks.test.sql`, `src/types/database.types.ts` and this plan file. Anything else: stop and report.
+**Expect:** only `supabase/migrations/0025_cleaning_feedbacks.sql`, `supabase/tests/database/cleaning_feedbacks.test.sql`, `src/types/database.types.ts` and this plan file. Anything else: stop and report.
 
 ## Rollback
 
 - Before commit: `git switch main && git branch -D feat/T3C-B19-Cleaning-Feedbacks-Table`, then `pnpm db:reset`.
-- After merge, if a hosted DB already has `0017_cleaning_feedbacks.sql`: add `0117_drop_cleaning_feedbacks.sql` containing `delete from public.app_permissions where resource = 'cleaning_feedbacks';` and `drop table public.cleaning_feedbacks;`. Never edit or delete an applied migration. Stop and ask first if other tables already reference `cleaning_feedbacks`.
+- After merge, if a hosted DB already has `0025_cleaning_feedbacks.sql`: add `0125_drop_cleaning_feedbacks.sql` containing `delete from public.app_permissions where resource = 'cleaning_feedbacks';` and `drop table public.cleaning_feedbacks;`. Never edit or delete an applied migration. Stop and ask first if other tables already reference `cleaning_feedbacks`.
 
 ## Conventional commits
 
@@ -286,7 +295,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 ```
 
 1. `feat(db): add cleaning_feedbacks table with role-based RLS`
-   Files: `supabase/migrations/0017_cleaning_feedbacks.sql`, `src/types/database.types.ts`
+   Files: `supabase/migrations/0025_cleaning_feedbacks.sql`, `src/types/database.types.ts`
 2. `test(db): cover cleaning_feedbacks constraints and access`
    Files: `supabase/tests/database/cleaning_feedbacks.test.sql`
 3. `docs(plans): add T3C-B19 plan`

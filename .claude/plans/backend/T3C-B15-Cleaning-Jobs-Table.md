@@ -13,7 +13,7 @@ Source: sprint sheet `The Tidy Team - Digital Platforms Sprint - Sprint 2_ Nov-2
 
 ## Facts (verified 2026-11-27)
 
-1. Branch is `main`. Migrations are numbered `NNNN_name.sql`. This plan adds `supabase/migrations/0013_cleaning_jobs.sql`, so migrations up to `0012` must already exist. **Known problem:** `property_id` references `public.properties`, which is created by `0019_properties.sql` (T3C-B21). A migration numbered `0013` sorts before `0019` and fails on `pnpm db:reset`. See open question 1 before implementing. Plans are applied in migration order: roles is `0003`, app_permissions is `0004` and user admin is `0005` (T3C-B0), companies is `0006` (`.claude/plans/backend/T3C-B7-S8-Companies-Table.md`).
+1. Branch is `main`. Migrations are numbered `NNNN_name.sql`. This plan adds `supabase/migrations/0022_cleaning_jobs.sql`, so migrations up to `0021` must already exist (`property_id` references `public.properties`, created by `0019_properties.sql`, so this table is numbered after `0021`; decided by the owner 2026-11-27, see open question 1). Plans are applied in migration order: roles is `0003`, app_permissions is `0004` and user admin is `0005` (T3C-B0), companies is `0006` (`.claude/plans/backend/T3C-B7-S8-Companies-Table.md`).
 2. Required earlier migrations (plan that creates each): `0003_roles.sql` and `0004_app_permissions.sql` (T3C-B0); `0007_clients.sql` (T3C-B6); `0012_cleaning_statuses.sql` (T3C-B13-S14); `0019_properties.sql` (T3C-B21). If any is missing, **stop and report**.
 3. The seed from T3C-S14 (in `0011`'s plan) must be applied: the `Booked` status row with id `10000000-0000-0000-0000-000000000001` must exist after `pnpm db:reset`.
 4. Table `public.cleaning_jobs` does not exist yet, and `src/types/database.types.ts` has no `cleaning_jobs` entry. That file is generated; never hand-edit it.
@@ -28,13 +28,13 @@ Source: sprint sheet `The Tidy Team - Digital Platforms Sprint - Sprint 2_ Nov-2
 - `client_id`, `property_id` and `cleaning_status_id` use `no action` (clients, properties and statuses in use cannot be deleted).
 - `est_hours` is an integer, as the story says (no half hours).
 - **Access (owner rule)**: a profile with the **Admin** role can read and write this table; a profile with the **User** role can only read it. Implemented as four policies (select, insert, update, delete) that call `has_permission(<table>, <action>)`, plus the table's three rows in `app_permissions` (Admin and Super Admin read and write, User reads only), seeded in the same migration. `anon` gets nothing. There is no per-user ownership on this data, so there is no user-isolation test.
-- **Columns are exactly those in the story**, in the story order. No `created_at` unless the story lists it.
+- **Columns are those in the story**, in the story order, plus `created_at timestamptz not null default now()` as the last column (added by the owner on 2026-11-27; the story does not list it). The list page and the feedback function use it.
 - **Required text columns** are `not null` and also reject blank or whitespace-only values (`char_length(trim(col)) > 0`).
 - **No UI** in this plan. Backend and seed stories only. Pages for this table are out of scope (see open question).
 
-### Open questions (do not block, except number 1)
+### Open questions (do not block)
 
-1. **Migration number (blocks implementation).** `property_id` needs `0019_properties.sql` to exist first, so this table must be numbered after `0021`. Renumber this migration and its test file to the next free number after `0021`. Plans T3C-B26 and T3C-B27 reference `0022` and `0023` and must be renumbered to follow it. Owner to decide before implementing.
+1. **Migration number (decided 2026-11-27).** Numbered `0022`; the related plans (T3C-B16, B17, B18, B19, B26, B27, B28-29, B30, S31, B32, B33) were renumbered to follow it.
 2. `cleaners_needed` is not checked against the number of rows in `cleaning_job_assignments`. Should it be?
 3. The Booked default only works where the S14 seed ran. SIT and production need the four statuses loaded (same issue as the companies seed).
 4. Pages (list, create, edit) for this table are not planned. Should they be added, as was done for companies?
@@ -58,14 +58,14 @@ git status --short && git switch -c feat/T3C-B15-Cleaning-Jobs-Table && pnpm db:
 ```
 
 **Gate:** `git branch --show-current && ls supabase/migrations`
-**Expect:** `feat/T3C-B15-Cleaning-Jobs-Table`, then a migration list that includes `0019_properties.sql`, `0020_areas.sql` and `0021_items.sql`, and ends at the migration number chosen in open question 1, minus one. If `git status --short` printed anything before the switch, or the list is different, stop and report.
+**Expect:** `feat/T3C-B15-Cleaning-Jobs-Table`, then a migration list that includes `0019_properties.sql`, `0020_areas.sql` and `0021_items.sql`, and ends at `0021_items.sql`. If `git status --short` printed anything before the switch, or the list is different, stop and report.
 
 ### Step 1. Migration (create file)
 
-Create `supabase/migrations/0013_cleaning_jobs.sql` with exactly this content. (Use the number chosen in open question 1 instead of `0013` if it has been changed.)
+Create `supabase/migrations/0022_cleaning_jobs.sql` with exactly this content.
 
 ```sql
--- 0013_cleaning_jobs: booked cleans: when, for whom, how long and at what rate.
+-- 0022_cleaning_jobs: booked cleans: when, for whom, how long and at what rate.
 
 create table public.cleaning_jobs (
   id                 uuid primary key default gen_random_uuid(),
@@ -79,7 +79,8 @@ create table public.cleaning_jobs (
   cleaners_needed    integer not null check (cleaners_needed > 0),
   rate               numeric(10, 2) not null check (rate >= 0),
   pets               text,
-  description        text
+  description        text,
+  created_at         timestamptz not null default now()
 );
 
 create index cleaning_jobs_client_id_idx on public.cleaning_jobs (client_id);
@@ -121,14 +122,14 @@ insert into public.app_permissions (role_id, resource, "read", "create", "update
 
 ### Step 2. pgTAP test (create file)
 
-Create `supabase/tests/database/cleaning_jobs.test.sql` with exactly this content. (Use the migration number from open question 1 in the file name if it has been changed.)
+Create `supabase/tests/database/cleaning_jobs.test.sql` with exactly this content.
 
 ```sql
 -- pgTAP: cleaning_jobs. RLS, access, constraints.
 -- Run with: pnpm test:db   (supabase test db)
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(22);
 
 -- Fixed test identities. The whole file runs in one transaction and rolls back.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
@@ -293,6 +294,11 @@ select throws_ok(
   'rate cannot be negative'
 );
 
+select ok(
+  (select bool_and(created_at is not null) from public.cleaning_jobs),
+  'created_at is filled in automatically'
+);
+
 select * from finish();
 rollback;
 ```
@@ -309,7 +315,7 @@ pnpm db:reset && grep -c "cleaning_jobs" src/types/database.types.ts
 pnpm test:db
 ```
 
-**Expect:** every file reports `ok`, the summary ends with `Result: PASS`, and `cleaning_jobs.test.sql` runs 21 tests. If a test fails, stop and report; do not edit the test or the migration to make it pass.
+**Expect:** every file reports `ok`, the summary ends with `Result: PASS`, and `cleaning_jobs.test.sql` runs 22 tests. If a test fails, stop and report; do not edit the test or the migration to make it pass.
 
 ```bash
 pnpm typecheck && pnpm lint
@@ -326,7 +332,7 @@ git status --short
 ## Rollback
 
 - Before commit: `git switch main && git branch -D feat/T3C-B15-Cleaning-Jobs-Table`, then `pnpm db:reset`.
-- After merge, if a hosted DB already has the cleaning_jobs migration: add a new `01NN_drop_cleaning_jobs.sql` migration containing `delete from public.app_permissions where resource = 'cleaning_jobs';` and `drop table public.cleaning_jobs;`. Never edit or delete an applied migration. Stop and ask first if other tables already reference `cleaning_jobs`.
+- After merge, if a hosted DB already has the cleaning_jobs migration: add a new `0122_drop_cleaning_jobs.sql` migration containing `delete from public.app_permissions where resource = 'cleaning_jobs';` and `drop table public.cleaning_jobs;`. Never edit or delete an applied migration. Stop and ask first if other tables already reference `cleaning_jobs`.
 
 ## Conventional commits
 
