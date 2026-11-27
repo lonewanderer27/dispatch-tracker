@@ -1,7 +1,7 @@
 -- pgTAP: the local seed produces the expected test users and roles.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(4);
+select plan(6);
 
 select is(
   (select count(*) from public.profiles where id in (
@@ -29,6 +29,26 @@ select is(
      where p.id = '33333333-3333-3333-3333-333333333333'),
   'Super Admin',
   'seeded super admin has the Super Admin role'
+);
+
+select set_eq(
+  $$select name from public.companies$$,
+  $$values ('The Tidy Team'), ('Total Home Care'), ('Maids in Pink'), ('Diamond MIP')$$,
+  'seed creates exactly the four companies'
+);
+
+-- Re-run the seed insert: it must not create duplicates.
+insert into public.companies (name) values
+  ('The Tidy Team'),
+  ('Total Home Care'),
+  ('Maids in Pink'),
+  ('Diamond MIP')
+on conflict (name) do nothing;
+
+select is(
+  (select count(*) from public.companies),
+  4::bigint,
+  'seeding twice creates no duplicate companies'
 );
 
 select * from finish();
