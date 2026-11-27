@@ -25,7 +25,7 @@ The local stack needs Docker (`pnpm db:start`). `supabase/functions/.env` and `.
   - state the decisions already made; list open questions separately and say they do not block;
   - say what is out of scope;
   - tell the implementer to **stop and report** (not fix) when the code does not match the plan's Facts or a gate's Expect.
-- Follow the existing structure: `src/features/<feature>/` for data access and hooks, `src/pages/<resource>/` for pages, `src/providers/` for Refine providers. Use the generated `Tables<'...'>` types; never hand-edit `src/types/database.types.ts` (run `pnpm db:types`).
+- Follow the existing structure: `src/features/<feature>/` for data access and hooks, `src/pages/<resource>/` for pages, `src/components/<feature>/` for the other components of a feature, `src/providers/` for Refine providers. **A pages folder holds only the Create, Edit and List pages** of its resource; any other component (filter bars, modals, pickers) goes in `src/components/<feature>/`. Use the generated `Tables<'...'>` types; never hand-edit `src/types/database.types.ts` (run `pnpm db:types`).
 - Every new table gets RLS, explicit grants, policies that call `has_permission`, its own rows in `app_permissions`, and a pgTAP isolation test (see the README checklist).
 - Prettier and ESLint are the formatters; apply them only to files you touch (`pnpm format:check`), never reformat untouched files.
 - Update `README.md` when a script, the layout or a setup step changes. Edit `AGENTS.md` only when a convention or command changes.

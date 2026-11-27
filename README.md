@@ -74,7 +74,10 @@ src/
   providers/                   Refine data/live provider, auth provider
   features/integration/        data access + hooks for dashboard checks
   features/users/              role ids and the Super Admin user update call
+  features/cleaning-jobs/      data access, React Query hooks and helpers for the Cleaning Jobs list
+  components/<feature>/        components used by a page that are not a page (filter bars, modals, pickers)
   pages/dashboard, pages/todos, pages/users, pages/companies, pages/clients, pages/contacts, pages/cleaners, pages/company-cleaners
+                               (a pages folder holds only Create, Edit and List pages)
 e2e/                           Playwright specs and the Frankfurter stub
 ```
 
@@ -84,7 +87,7 @@ e2e/                           Playwright specs and the Frankfurter stub
 2. RLS: enable RLS on the table, then add explicit `grant`s and policies. Anon gets nothing by default. Policies call `has_permission('<table>', '<action>')`, and the same migration inserts the table's rows in `app_permissions` (Admin and Super Admin read and write, User reads only). `rbac.test.sql` fails if a table has no row for a role.
 3. pgTAP: add a test under `supabase/tests/database/` that proves isolation (user A cannot read or write user B's rows).
 4. Types: `pnpm db:reset`, which regenerates `src/types/database.types.ts`.
-5. Resource: add a `ResourceProps` entry in `src/App.tsx`, then pages under `src/pages/<table>/` using `useTable`, `useForm` and `useShow` with `Tables<'<table>'>`.
+5. Resource: add a `ResourceProps` entry in `src/App.tsx`, then pages under `src/pages/<table>/` (only Create, Edit and List; other components go in `src/components/<table>/`) using `useTable`, `useForm` and `useShow` with `Tables<'<table>'>`.
 6. Run `pnpm test:all`.
 
 ## The two integration buttons
