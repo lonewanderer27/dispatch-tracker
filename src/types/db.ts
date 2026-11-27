@@ -16,4 +16,5 @@ export type ClientRow = Client & { companies: { name: string } | null }
 export type ContactRow = Contact & { clients: { name: string } | null }
 export type Profile = Tables<'profiles'>
 export type UserRow = Profile & { roles: { name: string } | null }
+export type Cleaner = Tables<'cleaners'>
 export type TodoStats = PublicSchema['Functions']['todo_stats']['Returns'][number]
