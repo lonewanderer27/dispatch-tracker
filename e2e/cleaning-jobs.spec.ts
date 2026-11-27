@@ -132,6 +132,24 @@ test.describe('Cleaning Jobs', () => {
     await expect(dataRows(page)).toHaveCount(10)
   })
 
+  test('flips the Scheduled Date order on every click', async ({ page }) => {
+    await signIn(page, 'user@example.com', 'user-password-123')
+    await openCleaningJobs(page)
+
+    const header = page.getByRole('columnheader', { name: 'Scheduled Date' })
+    const firstDate = () => dataRows(page).first().locator('td').nth(3)
+    await expect(header).toHaveAttribute('aria-sort', 'descending')
+    const newest = await firstDate().textContent()
+
+    await header.click()
+    await expect(header).toHaveAttribute('aria-sort', 'ascending')
+    await expect(firstDate()).not.toHaveText(newest ?? '')
+
+    await header.click()
+    await expect(header).toHaveAttribute('aria-sort', 'descending')
+    await expect(firstDate()).toHaveText(newest ?? '')
+  })
+
   test('sorts by a column and returns to newest first on the third click', async ({ page }) => {
     await signIn(page, 'user@example.com', 'user-password-123')
     await openCleaningJobs(page)
