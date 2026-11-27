@@ -21,7 +21,7 @@ Source: sprint sheet `The Tidy Team - Digital Platforms Sprint - Sprint 2_ Nov-2
 4. Roles come from T3C-B0 (`.claude/plans/backend/T3C-B0-Users-Table.md`): `supabase/migrations/0003_roles.sql` creates `public.roles` (Admin id `30000000-0000-0000-0000-000000000001`, User id `30000000-0000-0000-0000-000000000002`) and replaces `profiles.role` with `profiles.role_id`. `public.is_admin()` is true when the caller's profile has the Admin role id. Policies of this table do not use it; they call `(select public.has_permission('<table>', '<action>'))`, which needs `0004_app_permissions.sql` (T3C-B0 phase 2: Super Admin role id `30000000-0000-0000-0000-000000000003`, `public.app_permissions`, `public.has_permission`). If `0004_app_permissions.sql` is missing, **stop and report**. If `0003_roles.sql` is missing, **stop and report**.
 5. Table pattern (`0001_init.sql`): `id uuid primary key default gen_random_uuid()`, `enable row level security`, `revoke all ... from anon, authenticated`, explicit `grant ... to authenticated`, then policies.
 6. `supabase/tests/database/` holds `rls.test.sql`, `seed.test.sql`, `todo_stats.test.sql` (and `roles.test.sql` and `companies.test.sql` once T3C-B0 and T3C-B7-S8 are implemented). `rls.test.sql` already asserts that every public table has RLS enabled.
-7. `supabase/seed.sql` runs only on `pnpm db:reset`. New seed blocks are **appended to the end** of the file.
+7. `supabase/seeds/02_reference_data.sql` runs only on `pnpm db:reset`. New seed blocks are **appended to the end** of the file.
 
 ## Decisions already made (do not reopen)
 
@@ -103,7 +103,7 @@ insert into public.app_permissions (role_id, resource, "read", "create", "update
   ('30000000-0000-0000-0000-000000000003', 'invoice_statuses', true, true,  true,  true);
 ```
 
-### Step 2. Seed (edit `supabase/seed.sql`)
+### Step 2. Seed (edit `supabase/seeds/02_reference_data.sql`)
 
 Append to the end of the file (after its last line) a blank line and this block:
 
@@ -268,7 +268,7 @@ pnpm typecheck && pnpm lint
 git status --short
 ```
 
-**Expect:** only `supabase/migrations/0032_invoice_statuses.sql`, `supabase/seed.sql`, `supabase/tests/database/invoice_statuses.test.sql`, `src/types/database.types.ts` and this plan file. Anything else: stop and report.
+**Expect:** only `supabase/migrations/0032_invoice_statuses.sql`, `supabase/seeds/02_reference_data.sql`, `supabase/tests/database/invoice_statuses.test.sql`, `src/types/database.types.ts` and this plan file. Anything else: stop and report.
 
 ## Rollback
 
@@ -288,7 +288,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 1. `feat(db): add invoice_statuses table with role-based RLS`
    Files: `supabase/migrations/0032_invoice_statuses.sql`, `src/types/database.types.ts`
 2. `feat(db): seed the invoice statuses`
-   Files: `supabase/seed.sql`
+   Files: `supabase/seeds/02_reference_data.sql`
 3. `test(db): cover invoice_statuses constraints and access`
    Files: `supabase/tests/database/invoice_statuses.test.sql`
 4. `docs(plans): add T3C-B28 T3C-S29 plan`

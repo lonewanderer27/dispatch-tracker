@@ -16,7 +16,7 @@ Priority is Lowest. The story says the values come from Finance, and they are no
 
 1. Needs `supabase/migrations/0033_invoice_templates.sql` (T3C-B30) and the companies seed (T3C-B7-S8). If either is missing, **stop and report**.
 2. `invoice_templates` has a unique `company_id`, so `on conflict (company_id) do nothing` makes the seed idempotent.
-3. `supabase/seed.sql` runs only on `pnpm db:reset`. New seed blocks are **appended to the end** of the file, after the companies block.
+3. `supabase/seeds/02_reference_data.sql` runs only on `pnpm db:reset`. New seed blocks are **appended to the end** of the file, after the companies block.
 4. The four company names are exactly: `The Tidy Team`, `Total Home Care`, `Maids in Pink`, `Diamond MIP`.
 
 ## Inputs required (from Finance)
@@ -33,7 +33,7 @@ The implementer replaces each `<<...>>` token in Step 1 with the value from this
 ## Decisions already made (do not reopen)
 
 - The seed joins `companies` by name, so it inserts nothing for a company that does not exist.
-- Only `seed.sql` changes. No migration, no UI.
+- Only `02_reference_data.sql` changes. No migration, no UI.
 - The test asserts four templates (one per seeded company).
 
 ### Open questions (do not block)
@@ -56,7 +56,7 @@ git status --short && git switch -c feat/T3C-S31-Invoice-Templates-Seed && pnpm 
 **Gate:** `git branch --show-current`
 **Expect:** `feat/T3C-S31-Invoice-Templates-Seed`, and the `ls` finds the file. Otherwise stop and report. Also stop if any Inputs table cell is still a `<<...>>` token.
 
-### Step 1. Seed (edit `supabase/seed.sql`)
+### Step 1. Seed (edit `supabase/seeds/02_reference_data.sql`)
 
 Append to the end of the file a blank line and this block, with every `<<...>>` token replaced from the Inputs table:
 
@@ -75,7 +75,7 @@ join public.companies c on c.name = v.company_name
 on conflict (company_id) do nothing;
 ```
 
-**Gate:** `grep -c "<<" supabase/seed.sql`
+**Gate:** `grep -c "<<" supabase/seeds/02_reference_data.sql`
 **Expect:** `0`.
 
 ### Step 2. pgTAP test (create file)
@@ -123,12 +123,12 @@ pnpm db:reset && pnpm test:db
 git status --short
 ```
 
-**Expect:** only `supabase/seed.sql`, `supabase/tests/database/invoice_templates_seed.test.sql` and this plan file.
+**Expect:** only `supabase/seeds/02_reference_data.sql`, `supabase/tests/database/invoice_templates_seed.test.sql` and this plan file.
 
 ## Rollback
 
 - Before commit: `git switch main && git branch -D feat/T3C-S31-Invoice-Templates-Seed`, then `pnpm db:reset`.
-- After merge: remove the block from `seed.sql` in a new commit. Seeded rows are local only.
+- After merge: remove the block from `02_reference_data.sql` in a new commit. Seeded rows are local only.
 
 ## Conventional commits
 
@@ -141,7 +141,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 ```
 
 1. `feat(db): seed a starting invoice template per company`
-   Files: `supabase/seed.sql`
+   Files: `supabase/seeds/02_reference_data.sql`
 2. `test(db): cover the invoice template seed`
    Files: `supabase/tests/database/invoice_templates_seed.test.sql`
 3. `docs(plans): add T3C-S31 plan`
