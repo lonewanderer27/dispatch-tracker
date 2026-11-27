@@ -81,3 +81,25 @@ insert into public.contacts (id, client_id, first_name, last_name, contact_no) v
   ('e0000000-0000-0000-0000-000000000003', 'd0000000-0000-0000-0000-000000000002', 'Tom', 'Reyes', '0400 222 333'),
   ('e0000000-0000-0000-0000-000000000004', 'd0000000-0000-0000-0000-000000000002', 'Lee', 'Chen', '+61 3 9000 2222')
 on conflict (id) do nothing;
+
+-- Cleaners roster. The surnames are invented placeholders for local testing only; replace them
+-- with the real names before any hosted use. Safe to run more than once.
+insert into public.cleaners (first_name, last_name)
+select v.first_name, v.last_name
+from (values
+  ('Aimee', 'Calloway'),
+  ('Jen', 'Ashdown'),
+  ('Joy', 'Lindqvist'),
+  ('Leigha', 'Fairweather'),
+  ('Lynn', 'Orchard'),
+  ('Nilda', 'Sorrento'),
+  ('Nosh', 'Maddox'),
+  ('Ruth', 'Penhallow'),
+  ('Samira', 'Hollis'),
+  ('Sheng', 'Whitlock')
+) as v(first_name, last_name)
+where not exists (
+  select 1 from public.cleaners c
+  where c.first_name = v.first_name and c.last_name = v.last_name
+);
+
