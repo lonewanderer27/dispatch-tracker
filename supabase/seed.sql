@@ -103,3 +103,22 @@ where not exists (
   where c.first_name = v.first_name and c.last_name = v.last_name
 );
 
+-- Company links for the roster above: each cleaner works for Total Home Care and The Tidy Team.
+-- Runs after the cleaners seed, so it looks the cleaners up by full name. Safe to run more than once.
+insert into public.company_cleaners (cleaner_id, company_id)
+select c.id, co.id
+from (values
+  ('Aimee', 'Calloway'),
+  ('Jen', 'Ashdown'),
+  ('Joy', 'Lindqvist'),
+  ('Leigha', 'Fairweather'),
+  ('Lynn', 'Orchard'),
+  ('Nilda', 'Sorrento'),
+  ('Nosh', 'Maddox'),
+  ('Ruth', 'Penhallow'),
+  ('Samira', 'Hollis'),
+  ('Sheng', 'Whitlock')
+) as v(first_name, last_name)
+join public.cleaners c on c.first_name = v.first_name and c.last_name = v.last_name
+join public.companies co on co.name in ('Total Home Care', 'The Tidy Team')
+on conflict (cleaner_id, company_id) do nothing;
