@@ -31,7 +31,7 @@ Seeded local accounts (local only, never on a hosted project):
 | `user@example.com`       | `user-password-123`       | User        |
 | `superadmin@example.com` | `superadmin-password-123` | Super Admin |
 
-Architecture changes are documented, one numbered file each, in [docs/architecture](docs/architecture). Access control: [0001 Role-based access](docs/architecture/0001-Role-Based-Access.md). Users page: [0002 User management](docs/architecture/0002-User-Management.md). Cleaning jobs: [0003 Data model](docs/architecture/0003-Cleaning-Job-Data-Model.md), [0004 List function and hooks](docs/architecture/0004-Cleaning-Jobs-List-Function.md), [0005 Preferred time zone](docs/architecture/0005-Preferred-Time-Zone.md). Local data: [0006 Seed data](docs/architecture/0006-Local-Seed-Data.md).
+Architecture changes are documented, one numbered file each, in [docs/architecture](docs/architecture). Access control: [0001 Role-based access](docs/architecture/0001-Role-Based-Access.md). Users page: [0002 User management](docs/architecture/0002-User-Management.md). Cleaning jobs: [0003 Data model](docs/architecture/0003-Cleaning-Job-Data-Model.md), [0004 List function and hooks](docs/architecture/0004-Cleaning-Jobs-List-Function.md), [0005 Preferred time zone](docs/architecture/0005-Preferred-Time-Zone.md). Local data: [0006 Seed data](docs/architecture/0006-Local-Seed-Data.md). Pill colours: [0007 Color motifs](docs/architecture/0007-Color-Motifs.md).
 
 ## Scripts
 
@@ -75,6 +75,7 @@ src/
   features/integration/        data access + hooks for dashboard checks
   features/users/              role ids and the Super Admin user update call
   features/cleaning-jobs/      data access, React Query hooks and helpers for the Cleaning Jobs list
+  features/color-motif/        the pill colour palette (COLOR_MOTIFS) shared by every list and form
   components/<feature>/        components used by a page that are not a page (filter bars, modals, pickers)
   pages/dashboard, pages/todos, pages/users, pages/companies, pages/clients, pages/contacts, pages/cleaners, pages/company-cleaners
                                (a pages folder holds only Create, Edit and List pages)
