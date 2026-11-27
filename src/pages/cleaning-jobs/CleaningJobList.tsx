@@ -1,6 +1,17 @@
 import { useState } from 'react'
 import { List } from '@refinedev/antd'
-import { Alert, Button, Empty, Rate, Space, Table, Tag, Typography, type TableProps } from 'antd'
+import {
+  Alert,
+  Button,
+  Empty,
+  Rate,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+  type TableProps,
+} from 'antd'
 import {
   DEFAULT_QUERY,
   EMPTY_FILTERS,
@@ -9,6 +20,7 @@ import {
   type CleaningJobQuery,
   type CleaningJobSortKey,
 } from '@/features/cleaning-jobs/api'
+import { firstName } from '@/features/cleaning-jobs/cleanerName'
 import { useCleaningJobs } from '@/features/cleaning-jobs/hooks'
 import { formatSchedule } from '@/features/cleaning-jobs/timeZone'
 import { usePreferredTimeZone } from '@/features/cleaning-jobs/usePreferredTimeZone'
@@ -17,6 +29,7 @@ import { CleaningJobFilterBar } from '@/components/cleaning-jobs/CleaningJobFilt
 import { FeedbackModal } from '@/components/cleaning-jobs/FeedbackModal'
 import { TimeZonePicker } from '@/components/cleaning-jobs/TimeZonePicker'
 import { ColorMotifTag } from '@/components/color-motif/ColorMotifTag'
+import { CompanyTag } from '@/components/company/CompanyTag'
 
 const CAD = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' })
 const SORT_KEYS: readonly CleaningJobSortKey[] = ['schedule', 'client', 'cleaning_type', 'rating']
@@ -118,7 +131,9 @@ export function CleaningJobList() {
             ) : (
               <Space wrap>
                 {record.cleaners.map((cleaner) => (
-                  <Tag key={cleaner.cleaner_id}>{cleaner.full_name}</Tag>
+                  <Tooltip key={cleaner.cleaner_id} title={cleaner.full_name}>
+                    <Tag aria-label={cleaner.full_name}>{firstName(cleaner.full_name)}</Tag>
+                  </Tooltip>
                 ))}
               </Space>
             )
@@ -127,7 +142,9 @@ export function CleaningJobList() {
         <Table.Column<CleaningJobListRow>
           title="Company"
           render={(_, record) => (
-            <ColorMotifTag motif={record.company_color}>{record.company_name}</ColorMotifTag>
+            <CompanyTag
+              company={{ name: record.company_name, color_motif: record.company_color }}
+            />
           )}
         />
         <Table.Column<CleaningJobListRow>

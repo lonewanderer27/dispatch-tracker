@@ -1,7 +1,7 @@
 import { DeleteButton, EditButton, List, useTable } from '@refinedev/antd'
 import { Space, Table } from 'antd'
 import type { Company } from '@/types/db'
-import { ColorMotifTag } from '@/components/color-motif/ColorMotifTag'
+import { CompanyTag } from '@/components/company/CompanyTag'
 
 export function CompanyList() {
   const { tableProps } = useTable<Company>({
@@ -16,9 +16,7 @@ export function CompanyList() {
           dataIndex="name"
           title="Name"
           sorter
-          render={(name: string, record) => (
-            <ColorMotifTag motif={record.color_motif}>{name}</ColorMotifTag>
-          )}
+          render={(_, record) => <CompanyTag company={record} />}
         />
         <Table.Column<Company>
           title="Actions"

@@ -5521,3 +5521,193 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
    Files: `.claude/plans/backend/T3C-F35-Cleaning-Jobs-List.md`
 
 The Phase 2 commits go on the same pull request as Phase 1 (PR title `feat(web): add Cleaning Jobs list`, unchanged). Merge with a normal merge commit.
+  test('the Clients and Company cleaners lists show companies as coloured pills', async ({
+    page,
+  }) => {
+    await signIn(page, 'user@example.com', 'user-password-123')
+
+    // The seed puts Sam Newbie under The Tidy Team, which is red. The seed has hundreds of clients,
+    // so open the list with a page size that holds them all.
+    await page.goto('/clients?current=1&pageSize=1000')
+    const client = page.getByRole('row', { name: /Sam Newbie/ })
+    await expect(client.locator('.ant-tag', { hasText: /^The Tidy Team$/ })).toHaveClass(
+      /ant-tag-red/,
+    )
+
+    // Every seeded cleaner works for The Tidy Team (red) and Total Home Care (cyan).
+    await page.goto('/company-cleaners')
+    const cleaner = page.locator('tbody tr.ant-table-row').first()
+    await expect(cleaner.locator('.ant-tag', { hasText: /^The Tidy Team$/ })).toHaveClass(
+      /ant-tag-red/,
+    )
+    await expect(cleaner.locator('.ant-tag', { hasText: /^Total Home Care$/ })).toHaveClass(
+      /ant-tag-cyan/,
+    )
+  })
+```
+
+**Gate:** `npx prettier --check src e2e && pnpm typecheck && pnpm lint && pnpm test && pnpm exec playwright test e2e/color-motifs.spec.ts`
+**Expect:** all exit 0; Vitest reports 23 files and 147 tests passing (Phase 2 had 19 files and 134 with the sort fix; this phase adds `CompanyTag.test.tsx`, `ClientList.test.tsx` and `CompanyCleanerList.test.tsx`); Playwright reports `4 passed` (the setup plus 3 tests). In the Company cleaners test, the confirm dialog is checked through a spy on `Modal.confirm`, because antd 5's static modal does not render under React 19 in jsdom. If a test fails, stop and report.
+
+#### Step 26a. Assignees show their first name (create and edit files)
+
+Owner request: the Assignee column shows only the first name of each cleaner, and hovering over it shows the full name. The pill keeps the full name as its accessible name. The first name is the first word of the full name the database function builds (`first middle last`); a first name with a space in it would be cut at the space, which no seeded cleaner has.
+
+Create `src/features/cleaning-jobs/cleanerName.ts` with exactly this content:
+
+```ts
+/**
+ * The first name out of a cleaner's full name ("first middle last", as the database function builds
+ * it). A one word name is returned as it is.
+ */
+export function firstName(fullName: string): string {
+  return fullName.trim().split(/\s+/)[0] ?? fullName
+}
+```
+
+Create `src/features/cleaning-jobs/cleanerName.test.ts` with exactly this content:
+
+```ts
+import { describe, expect, it } from 'vitest'
+import { firstName } from '@/features/cleaning-jobs/cleanerName'
+
+describe('firstName', () => {
+  it('takes the first word of a full name', () => {
+    expect(firstName('Zed Adams')).toBe('Zed')
+    expect(firstName('Amy Lee Brown')).toBe('Amy')
+  })
+
+  it('keeps a one word name and ignores extra spaces', () => {
+    expect(firstName('Madonna')).toBe('Madonna')
+    expect(firstName('  Zed   Adams ')).toBe('Zed')
+  })
+})
+```
+
+In `src/pages/cleaning-jobs/CleaningJobList.tsx` find:
+
+```tsx
+                  <Tag key={cleaner.cleaner_id}>{cleaner.full_name}</Tag>
+```
+
+Replace with:
+
+```tsx
+                  <Tooltip key={cleaner.cleaner_id} title={cleaner.full_name}>
+                    <Tag aria-label={cleaner.full_name}>{firstName(cleaner.full_name)}</Tag>
+                  </Tooltip>
+```
+
+In `src/pages/cleaning-jobs/CleaningJobList.tsx` find:
+
+```tsx
+import { Alert, Button, Empty, Rate, Space, Table, Tag, Typography, type TableProps } from 'antd'
+```
+
+Replace with:
+
+```tsx
+import {
+  Alert,
+  Button,
+  Empty,
+  Rate,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+  type TableProps,
+} from 'antd'
+```
+
+In `src/pages/cleaning-jobs/CleaningJobList.tsx` find:
+
+```tsx
+import { useCleaningJobs }
+```
+
+Replace with:
+
+```tsx
+import { firstName } from '@/features/cleaning-jobs/cleanerName'
+import { useCleaningJobs }
+```
+
+In `src/pages/cleaning-jobs/CleaningJobList.test.tsx` find:
+
+```tsx
+    expect(within(row).getByText('Zed Adams')).toBeInTheDocument()
+```
+
+Replace with:
+
+```tsx
+    expect(within(row).getByText('Zed')).toBeInTheDocument()
+    expect(within(row).queryByText('Zed Adams')).not.toBeInTheDocument()
+```
+
+In `src/pages/cleaning-jobs/CleaningJobList.test.tsx` find:
+
+```tsx
+  it('marks an unassigned job and a job without feedback', () => {
+```
+
+Replace with:
+
+```tsx
+  it('shows only the first name of a cleaner and the full name on hover', async () => {
+    render(<CleaningJobList />)
+    const row = screen.getByRole('row', { name: /Xavier Ashby/ })
+    const pill = within(row).getByText('Zed')
+    expect(pill).toHaveAccessibleName('Zed Adams')
+    await userEvent.hover(pill)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Zed Adams')
+  })
+
+  it('marks an unassigned job and a job without feedback', () => {
+```
+
+In `e2e/cleaning-jobs.spec.ts` find the line `  test('flips the Scheduled Date order on every click', async ({ page }) => {` and insert this test before it:
+
+```ts
+  test('shows the first name of each assignee and the full name on hover', async ({ page }) => {
+    await signIn(page, 'user@example.com', 'user-password-123')
+    await openCleaningJobs(page)
+
+    const pill = dataRows(page).locator('td:first-child .ant-tag').first()
+    await expect(pill).toBeVisible()
+    const fullName = await pill.getAttribute('aria-label')
+    expect(fullName).toBeTruthy()
+    await expect(pill).toHaveText((fullName ?? '').split(' ')[0] ?? '')
+    await pill.hover()
+    await expect(page.getByRole('tooltip')).toHaveText(fullName ?? '')
+  })
+```
+
+#### Step 27. Manual check (no code)
+
+Open **Cleaning Jobs**: each assignee pill shows only the first name, and hovering shows the full name. Open **Clients** and **Company cleaners**: each company shows as a pill in its colour (Tidy Team red, Total Home Care cyan, Maids in Pink magenta, Diamond MIP blue in the seed); on Company cleaners the pill still has an x that asks for confirmation before removing the link. Change a company colour on its Edit page and reload both lists.
+
+### Rollback (Phase 3)
+
+UI only: revert the Phase 3 commits. No migration or data change.
+
+### Conventional commits (Phase 3)
+
+Every commit ends with `Refs: T3C-F35` and the `Co-Authored-By` line.
+
+1. `feat(web): show company pills in their colour on every company list`
+   Files: `src/components/color-motif/ColorMotifTag.tsx`, `src/components/company/CompanyTag.tsx`, `src/types/db.ts`, `src/pages/clients/ClientList.tsx`, `src/pages/company-cleaners/CompanyCleanerList.tsx`, `src/pages/companies/CompanyList.tsx`, `src/pages/cleaning-jobs/CleaningJobList.tsx`
+2. `test(web): cover the company pill and the lists that use it`
+   Files: `src/components/company/CompanyTag.test.tsx`, `src/pages/clients/ClientList.test.tsx`, `src/pages/company-cleaners/CompanyCleanerList.test.tsx`
+3. `test(e2e): check company pills on the Clients and Company cleaners lists`
+   Files: `e2e/color-motifs.spec.ts`
+4. `docs(agents): document the company pill`
+   Files: `docs/architecture/0007-Color-Motifs.md`
+5. `feat(web): show the first name of each assignee with the full name on hover`
+   Files: `src/features/cleaning-jobs/cleanerName.ts`, `src/pages/cleaning-jobs/CleaningJobList.tsx`
+6. `test(web): cover the assignee first name`
+   Files: `src/features/cleaning-jobs/cleanerName.test.ts`, `src/pages/cleaning-jobs/CleaningJobList.test.tsx`, `e2e/cleaning-jobs.spec.ts`
+7. `docs(plans): add Phase 3 to the T3C-F35 plan`
+   Files: `.claude/plans/backend/T3C-F35-Cleaning-Jobs-List.md`
