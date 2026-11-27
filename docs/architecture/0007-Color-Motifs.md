@@ -48,3 +48,7 @@ to validate.
 - Preset colours are not checked for contrast by this repo; Ant Design's preset tags are designed to
   be readable in both themes.
 - The colours of rows created on a hosted database start as `default` until an Admin sets them.
+
+## Company pills
+
+- `src/components/company/CompanyTag.tsx` is the one place that draws a company as a pill in its colour. It takes `{ name, color_motif }` and is used by the Companies, Clients, Company cleaners and Cleaning Jobs lists. A missing company is a grey "Unknown" pill. Any list that shows a company through another table selects `companies(name, color_motif)`.
