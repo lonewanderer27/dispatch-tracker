@@ -1,6 +1,6 @@
 # T3C-B22 Add the areas table
 
-> **Status: PENDING REVIEW.** Not approved for implementation until the owner removes this line.
+> **Status: Approved and implemented** on `feat/T3C-B20-S34-B21-B22-B24-Properties-Areas-Items` (commits `ce0abc3`, `565f231`, `b5f13f0`, and the shared seed and types commits `2789cbc`, `653105d`).
 >
 > **For the implementer:** follow the steps in order. Run every Gate command and compare its output with the Expect line. On any mismatch, or when the code does not match the Facts, **stop and report**; do not try to fix it. Do not `git add -A`, commit or push unless asked.
 
@@ -22,20 +22,20 @@ Source: sprint sheet `The Tidy Team - Digital Platforms Sprint - Sprint 2_ Nov-2
 ## Decisions already made (do not reopen)
 
 - Lookup table: reads for everyone, writes for admins only.
-- Uniqueness of `name` is exact (case-sensitive). No rows are seeded (no seed story exists).
+- Uniqueness of `name` is exact (case-sensitive). **As built:** rows are seeded (see As built).
 - **Access (owner rule)**: a profile with the **Admin** role can read and write this table; a profile with the **User** role can only read it. Implemented as four policies (select, insert, update, delete) that call `has_permission(<table>, <action>)`, plus the table's three rows in `app_permissions` (Admin and Super Admin read and write, User reads only), seeded in the same migration. `anon` gets nothing. There is no per-user ownership on this data, so there is no user-isolation test.
 - **Columns are exactly those in the story**, in the story order. No `created_at` unless the story lists it.
 - **Required text columns** are `not null` and also reject blank or whitespace-only values (`char_length(trim(col)) > 0`).
-- **No UI** in this plan. Backend and seed stories only. Pages for this table are out of scope (see open question).
+- **No UI** in the original plan. **As built:** pages and a sidebar entry were added at the owner's request (see As built).
 
 ### Open questions (do not block)
 
-1. Pages (list, create, edit) for this table are not planned. Should they be added, as was done for companies?
+1. ~~Pages (list, create, edit) for this table are not planned.~~ Resolved 2026-11-27: the owner asked for pages and a sidebar entry. Built, see As built.
 
 ## Out of scope
 
 - Every other table or story in the sprint sheet.
-- UI pages, Playwright e2e specs, Vitest component tests.
+- Playwright e2e specs and Vitest component tests. (UI pages were added, see As built.)
 - The role model beyond Admin, User and Super Admin.
 - Loading data into SIT or production.
 - `README.md` and `AGENTS.md` edits.
@@ -238,6 +238,14 @@ git status --short
 
 **Expect:** only `supabase/migrations/0020_areas.sql`, `supabase/tests/database/areas.test.sql`, `src/types/database.types.ts` and this plan file. Anything else: stop and report.
 
+## As built (2026-11-27)
+
+- Migration `0020_areas.sql` and test `areas.test.sql` match Steps 1 and 2. The pgTAP suite passes (17 files, 260 tests).
+- Seed (shared commit `2789cbc`): `Kitchen`, `Bathroom`, `Bedroom`, `Living Area`, `Floor`, `Dining Room`, `Hallway`, `Laundry Room`, `Basement`, `Garage`, `Balcony`. The first five are the areas in the booking workbook ("What areas need cleaning?"), in singular form. The other six come from online house and move-out cleaning checklists. Inserted with `on conflict (name) do nothing`.
+- Pages (commit `b5f13f0`, shared with T3C-B24): list, create and edit under `src/pages/areas/`, and an "Areas" sidebar entry at `/areas`. Create and edit have `name` (required, up to 100 characters) and `description` (optional). The list sorts by name and has a page-size selector (10, 20, 50, 100) from Refine's `useTable` pagination.
+- `areas` is in `ADMIN_WRITE_ONLY` in `src/providers/accessControlProvider.ts`, so users who cannot change dispatch data see the list but not create, edit or delete.
+- Not built: Playwright e2e specs and Vitest component tests.
+
 ## Rollback
 
 - Before commit: `git switch main && git branch -D feat/T3C-B22-Areas-Table`, then `pnpm db:reset`.
@@ -253,11 +261,15 @@ Refs: T3C-B22
 Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 ```
 
-1. `feat(db): add areas table with role-based RLS`
-   Files: `supabase/migrations/0020_areas.sql`, `src/types/database.types.ts`
-2. `test(db): cover areas constraints and access`
+As built, in order (the database types, seed and UI commits are shared with other tickets):
+
+1. `ce0abc3` `feat(db): add areas table with role-based RLS`
+   Files: `supabase/migrations/0020_areas.sql`
+2. `565f231` `test(db): cover areas constraints and access`
    Files: `supabase/tests/database/areas.test.sql`
-3. `docs(plans): add T3C-B22 plan`
+3. `b5f13f0` `feat(web): add areas and items pages to the sidebar` (shared with T3C-B24)
+   Files: `src/App.tsx`, `src/types/db.ts`, `src/providers/accessControlProvider.ts`, `src/pages/areas/*`, `src/pages/items/*`
+4. `docs(plans): mark T3C-B22 plan implemented`
    Files: `.claude/plans/backend/T3C-B22-Areas-Table.md`
 
 PR title: `feat(db): add areas table` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.
