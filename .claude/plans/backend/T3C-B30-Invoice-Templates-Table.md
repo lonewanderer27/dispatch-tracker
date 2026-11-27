@@ -301,6 +301,6 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 2. `test(db): cover invoice_templates constraints and access`
    Files: `supabase/tests/database/invoice_templates.test.sql`
 3. `docs(plans): add T3C-B30 plan`
-   Files: `.claude/plans/T3C-B30-Invoice-Templates-Table.md`
+   Files: `.claude/plans/backend/T3C-B30-Invoice-Templates-Table.md`
 
 PR title: `feat(db): add invoice_templates table` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.

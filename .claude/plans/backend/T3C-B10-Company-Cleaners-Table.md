@@ -277,6 +277,6 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 2. `test(db): cover company_cleaners constraints and access`
    Files: `supabase/tests/database/company_cleaners.test.sql`
 3. `docs(plans): add T3C-B10 plan`
-   Files: `.claude/plans/T3C-B10-Company-Cleaners-Table.md`
+   Files: `.claude/plans/backend/T3C-B10-Company-Cleaners-Table.md`
 
 PR title: `feat(db): add company_cleaners table` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.

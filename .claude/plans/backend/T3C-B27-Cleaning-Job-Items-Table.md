@@ -292,6 +292,6 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 2. `test(db): cover cleaning_job_items constraints and access`
    Files: `supabase/tests/database/cleaning_job_items.test.sql`
 3. `docs(plans): add T3C-B27 plan`
-   Files: `.claude/plans/T3C-B27-Cleaning-Job-Items-Table.md`
+   Files: `.claude/plans/backend/T3C-B27-Cleaning-Job-Items-Table.md`
 
 PR title: `feat(db): add cleaning_job_items table` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.

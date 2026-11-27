@@ -300,6 +300,6 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 3. `test(db): cover cleaning_types constraints and access`
    Files: `supabase/tests/database/cleaning_types.test.sql`
 4. `docs(plans): add T3C-B11 T3C-S12 plan`
-   Files: `.claude/plans/T3C-B11-S12-Cleaning-Types-Table.md`
+   Files: `.claude/plans/backend/T3C-B11-S12-Cleaning-Types-Table.md`
 
 PR title: `feat(db): add cleaning_types table` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.
