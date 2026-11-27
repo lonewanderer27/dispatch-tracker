@@ -14,6 +14,9 @@ values
   ('bbbbbbbb-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-000000000000',
    'authenticated', 'authenticated', 'bob@test.local', '', '{}', '{}', now(), now(), '', '', '', '');
 
+-- A sign-up has no role (0040). These tests were written for a User, so give the test users that role.
+update public.profiles set role_id = '30000000-0000-0000-0000-000000000002' where role_id is null;
+
 select is(
   (select preferred_time_zone from public.profiles where id = 'aaaaaaaa-0000-0000-0000-00000000000a'),
   'America/Edmonton',

@@ -16,6 +16,9 @@ values
   ('aaaaaaaa-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000000000',
    'authenticated', 'authenticated', 'alice@test.local', '', '{}', '{}', now(), now(), '', '', '', '');
 
+-- A sign-up has no role (0040). These tests were written for a User, so give the test users that role.
+update public.profiles set role_id = '30000000-0000-0000-0000-000000000002' where role_id is null;
+
 -- Fixture rows. The statuses are the seeded ones (supabase/seeds/02_reference_data.sql):
 --   Booked    10000000-0000-0000-0000-000000000001
 --   Confirmed 10000000-0000-0000-0000-000000000002

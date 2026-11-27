@@ -15,6 +15,9 @@ values
   ('cccccccc-1111-0000-0000-00000000000c', '00000000-0000-0000-0000-000000000000',
    'authenticated', 'authenticated', 'co-carol@test.local', '', '{}', '{}', now(), now(), '', '', '', '');
 
+-- A sign-up has no role (0040). These tests were written for a User, so give the test users that role.
+update public.profiles set role_id = '30000000-0000-0000-0000-000000000002' where role_id is null;
+
 update public.profiles set role_id = '30000000-0000-0000-0000-000000000001' where id = 'cccccccc-1111-0000-0000-00000000000c';
 
 -- A row to read and to try to change (inserted as the table owner, bypassing RLS).

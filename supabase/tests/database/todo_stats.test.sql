@@ -15,6 +15,9 @@ values
   ('d1d1d1d1-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000000',
    'authenticated', 'authenticated', 'stats-empty@test.local', '', '{}', '{}', now(), now(), '', '', '', '');
 
+-- A sign-up has no role (0040). These tests were written for a User, so give the test users that role.
+update public.profiles set role_id = '30000000-0000-0000-0000-000000000002' where role_id is null;
+
 -- User A: 3 todos, 1 done. User B: 1 todo, not done. User D: none.
 insert into public.todos (user_id, title, done) values
   ('a1a1a1a1-0000-0000-0000-000000000001', 'a1', true),

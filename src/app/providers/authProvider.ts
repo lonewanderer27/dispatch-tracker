@@ -1,6 +1,5 @@
 import type { AuthProvider } from '@refinedev/core'
 import { supabase } from '@/shared/supabase'
-import { USER_ROLE_ID } from '@/features/users/roles'
 
 interface Credentials {
   email: string
@@ -70,8 +69,9 @@ export const authProvider = {
       id: user.id,
       email: user.email,
       name: displayName === '' ? user.email : displayName,
-      role: profile?.roles.name ?? 'User',
-      roleId: profile?.role_id ?? USER_ROLE_ID,
+      // No role (a new sign-up, or a profile that did not load) stays "no role": it never falls back to User.
+      role: profile?.roles?.name ?? null,
+      roleId: profile?.role_id ?? null,
     }
   },
 
