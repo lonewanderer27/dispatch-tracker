@@ -20,8 +20,8 @@ small, so the work moved to where the data is.
 
 ## How it works
 
-- `get_cleaning_jobs` takes the filters (cleaner, company, client, cleaning type, feedback text,
-  rating, date range), the sort (scheduled date, client, cleaning type, rating), a page and a page
+- `get_cleaning_jobs` takes the filters (cleaner, company, client, cleaning type, cleaning status,
+  feedback text, rating, date range), the sort (scheduled date, client, cleaning type, rating), a page and a page
   size. It returns one page with every display column and the total count. Sort values are computed
   only for the sort that is chosen. The page size is capped at 100.
 - It calls `get_complete_address_for_property_id`, `get_cleaners_for_cleaning_job_id` and
