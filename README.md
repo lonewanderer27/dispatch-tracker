@@ -74,7 +74,7 @@ src/
   providers/                   Refine data/live provider, auth provider
   features/integration/        data access + hooks for dashboard checks
   features/users/              role ids and the Super Admin user update call
-  pages/dashboard, pages/todos, pages/users, pages/companies, pages/clients, pages/contacts
+  pages/dashboard, pages/todos, pages/users, pages/companies, pages/clients, pages/contacts, pages/cleaners, pages/company-cleaners
 e2e/                           Playwright specs and the Frankfurter stub
 ```
 

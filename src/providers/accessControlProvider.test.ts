@@ -32,7 +32,7 @@ describe('accessControlProvider', () => {
     expect(signedOut.can).toBe(false)
   })
 
-  it.each(['clients', 'contacts'])(
+  it.each(['clients', 'contacts', 'cleaners', 'company_cleaners'])(
     'lets a User read %s without asking who they are',
     async (resource) => {
       getIdentity.mockClear()
@@ -42,18 +42,24 @@ describe('accessControlProvider', () => {
     },
   )
 
-  it.each(['clients', 'contacts'])('lets an Admin change %s', async (resource) => {
-    getIdentity.mockResolvedValue({ id: 'u3', roleId: ADMIN_ROLE_ID })
-    for (const action of ['create', 'edit', 'delete']) {
-      expect(await accessControlProvider.can({ resource, action })).toEqual({ can: true })
-    }
-  })
+  it.each(['clients', 'contacts', 'cleaners', 'company_cleaners'])(
+    'lets an Admin change %s',
+    async (resource) => {
+      getIdentity.mockResolvedValue({ id: 'u3', roleId: ADMIN_ROLE_ID })
+      for (const action of ['create', 'edit', 'delete']) {
+        expect(await accessControlProvider.can({ resource, action })).toEqual({ can: true })
+      }
+    },
+  )
 
-  it.each(['clients', 'contacts'])('denies a User changing %s', async (resource) => {
-    getIdentity.mockResolvedValue({ id: 'u2', roleId: USER_ROLE_ID })
-    for (const action of ['create', 'edit', 'delete']) {
-      const res = await accessControlProvider.can({ resource, action })
-      expect(res.can).toBe(false)
-    }
-  })
+  it.each(['clients', 'contacts', 'cleaners', 'company_cleaners'])(
+    'denies a User changing %s',
+    async (resource) => {
+      getIdentity.mockResolvedValue({ id: 'u2', roleId: USER_ROLE_ID })
+      for (const action of ['create', 'edit', 'delete']) {
+        const res = await accessControlProvider.can({ resource, action })
+        expect(res.can).toBe(false)
+      }
+    },
+  )
 })
