@@ -10,6 +10,21 @@ export function CompanyCleanerCreate() {
     resource: 'cleaners',
     optionLabel: (cleaner) => `${cleaner.first_name} ${cleaner.last_name}`,
     optionValue: 'id',
+    sorters: [{ field: 'last_name', order: 'asc' }],
+    // The label is built from two columns, so Refine has no single field to search. Match either name.
+    onSearch: (value) =>
+      value
+        ? [
+            {
+              operator: 'or',
+              value: [
+                { field: 'first_name', operator: 'contains', value },
+                { field: 'middle_name', operator: 'contains', value },
+                { field: 'last_name', operator: 'contains', value },
+              ],
+            },
+          ]
+        : [],
   })
   const { selectProps: companySelectProps } = useSelect<Company>({
     resource: 'companies',
