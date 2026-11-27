@@ -64,3 +64,20 @@ insert into public.companies (name) values
   ('Maids in Pink'),
   ('Diamond MIP')
 on conflict (name) do nothing;
+
+-- Client scenarios for local testing. Safe to run more than once.
+-- 1. A new client who books for themselves: one client, one contact (the same person).
+-- 2. A recurring client that is a company (sub-con or parent-con) with three contacts.
+insert into public.clients (id, company_id, name) values
+  ('d0000000-0000-0000-0000-000000000001',
+   (select id from public.companies where name = 'The Tidy Team'), 'Sam Newbie'),
+  ('d0000000-0000-0000-0000-000000000002',
+   (select id from public.companies where name = 'The Tidy Team'), 'Harbour Build Pty Ltd')
+on conflict (id) do nothing;
+
+insert into public.contacts (id, client_id, first_name, last_name, contact_no) values
+  ('e0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', 'Sam', 'Newbie', '+61 400 111 222'),
+  ('e0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000002', 'Priya', 'Shah', '+61 2 9000 1111'),
+  ('e0000000-0000-0000-0000-000000000003', 'd0000000-0000-0000-0000-000000000002', 'Tom', 'Reyes', '0400 222 333'),
+  ('e0000000-0000-0000-0000-000000000004', 'd0000000-0000-0000-0000-000000000002', 'Lee', 'Chen', '+61 3 9000 2222')
+on conflict (id) do nothing;
