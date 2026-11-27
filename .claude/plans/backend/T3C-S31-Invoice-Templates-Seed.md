@@ -14,7 +14,7 @@ Priority is Lowest. The story says the values come from Finance, and they are no
 
 ## Facts (verified 2026-11-27)
 
-1. Needs `supabase/migrations/0023_invoice_templates.sql` (T3C-B30) and the companies seed (T3C-B7-S8). If either is missing, **stop and report**.
+1. Needs `supabase/migrations/0025_invoice_templates.sql` (T3C-B30) and the companies seed (T3C-B7-S8). If either is missing, **stop and report**.
 2. `invoice_templates` has a unique `company_id`, so `on conflict (company_id) do nothing` makes the seed idempotent.
 3. `supabase/seed.sql` runs only on `pnpm db:reset`. New seed blocks are **appended to the end** of the file, after the companies block.
 4. The four company names are exactly: `The Tidy Team`, `Total Home Care`, `Maids in Pink`, `Diamond MIP`.
@@ -50,7 +50,7 @@ The implementer replaces each `<<...>>` token in Step 1 with the value from this
 ### Step 0. Branch, baseline and inputs
 
 ```bash
-git status --short && git switch -c feat/T3C-S31-Invoice-Templates-Seed && pnpm db:start && ls supabase/migrations/0023_invoice_templates.sql
+git status --short && git switch -c feat/T3C-S31-Invoice-Templates-Seed && pnpm db:start && ls supabase/migrations/0025_invoice_templates.sql
 ```
 
 **Gate:** `git branch --show-current`

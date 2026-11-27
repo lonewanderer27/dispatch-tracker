@@ -1,4 +1,4 @@
-import { Authenticated, Refine, type ResourceProps } from '@refinedev/core'
+import { Authenticated, CanAccess, Refine, type ResourceProps } from '@refinedev/core'
 import { AuthPage, ThemedLayout, ThemedTitle, useNotificationProvider } from '@refinedev/antd'
 import '@refinedev/antd/dist/reset.css'
 import routerProvider, {
@@ -6,16 +6,19 @@ import routerProvider, {
   DocumentTitleHandler,
   UnsavedChangesNotifier,
 } from '@refinedev/react-router'
-import { DashboardOutlined, CheckSquareOutlined } from '@ant-design/icons'
+import { DashboardOutlined, CheckSquareOutlined, TeamOutlined } from '@ant-design/icons'
 import { ConfigProvider, theme } from 'antd'
 import { Navigate, Outlet, Route, Routes } from 'react-router'
 import { authProvider } from '@/providers/authProvider'
+import { accessControlProvider } from '@/providers/accessControlProvider'
 import { refineDataProvider, refineLiveProvider } from '@/providers/dataProvider'
 import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 import { TodoList } from '@/pages/todos/TodoList'
 import { TodoCreate } from '@/pages/todos/TodoCreate'
 import { TodoEdit } from '@/pages/todos/TodoEdit'
 import { TodoShow } from '@/pages/todos/TodoShow'
+import { UserList } from '@/pages/users/UserList'
+import { UserEdit } from '@/pages/users/UserEdit'
 
 const resources: ResourceProps[] = [
   {
@@ -31,6 +34,12 @@ const resources: ResourceProps[] = [
     show: '/todos/show/:id',
     meta: { label: 'Todos', icon: <CheckSquareOutlined /> },
   },
+  {
+    name: 'profiles',
+    list: '/users',
+    edit: '/users/edit/:id',
+    meta: { label: 'Users', icon: <TeamOutlined /> },
+  },
 ]
 
 export default function App() {
@@ -40,6 +49,7 @@ export default function App() {
         dataProvider={{ default: refineDataProvider }}
         liveProvider={refineLiveProvider}
         authProvider={authProvider}
+        accessControlProvider={accessControlProvider}
         routerProvider={routerProvider}
         notificationProvider={useNotificationProvider}
         resources={resources}
@@ -68,6 +78,17 @@ export default function App() {
               <Route path="create" element={<TodoCreate />} />
               <Route path="edit/:id" element={<TodoEdit />} />
               <Route path="show/:id" element={<TodoShow />} />
+            </Route>
+            <Route
+              path="/users"
+              element={
+                <CanAccess resource="profiles" action="list" fallback={<Navigate to="/" replace />}>
+                  <Outlet />
+                </CanAccess>
+              }
+            >
+              <Route index element={<UserList />} />
+              <Route path="edit/:id" element={<UserEdit />} />
             </Route>
           </Route>
 

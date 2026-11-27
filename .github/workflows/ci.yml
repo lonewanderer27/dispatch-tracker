@@ -60,8 +60,12 @@ jobs:
 
       - name: Start exchange stub and edge functions
         run: |
-          pnpm exchange-stub &
-          printf 'EXCHANGE_API_URL=http://127.0.0.1:4010\n' > supabase/functions/.env
+          # The edge function runs in a container, so 127.0.0.1 is not the runner. Run the stub as a
+          # container on the Supabase network and reach it by name.
+          docker run -d --name exchange-stub --network supabase_network_dispatch-tracker \
+            -e EXCHANGE_STUB_HOST=0.0.0.0 -v "$PWD/e2e:/app/e2e:ro" -w /app \
+            node:24-alpine node --experimental-strip-types e2e/stub-exchange-server.ts
+          printf 'EXCHANGE_API_URL=http://exchange-stub:4010\n' > supabase/functions/.env
           supabase functions serve --env-file supabase/functions/.env > functions.log 2>&1 &
           sleep 10
 

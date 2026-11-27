@@ -23,16 +23,56 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "profiles": {
+            "app_permissions": {
                   Row: {
-                    "created_at": string,"display_name": string,"id": string,"role": string
+                    "create": boolean,"delete": boolean,"read": boolean,"resource": string,"role_id": string,"update": boolean
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"display_name"?: string,"id": string,"role"?: string
+                    "create"?: boolean,"delete"?: boolean,"read"?: boolean,"resource": string,"role_id": string,"update"?: boolean
                   }
                   Update: {
-                    "created_at"?: string,"display_name"?: string,"id"?: string,"role"?: string
+                    "create"?: boolean,"delete"?: boolean,"read"?: boolean,"resource"?: string,"role_id"?: string,"update"?: boolean
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "app_permissions_role_id_fkey"
+      columns: ["role_id"]
+isOneToOne: false
+      referencedRelation: "roles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profiles": {
+                  Row: {
+                    "created_at": string,"display_name": string,"id": string,"role_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"display_name"?: string,"id": string,"role_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"display_name"?: string,"id"?: string,"role_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "profiles_role_id_fkey"
+      columns: ["role_id"]
+isOneToOne: false
+      referencedRelation: "roles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"roles": {
+                  Row: {
+                    "id": string,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: string,"name": string
+                  }
+                  Update: {
+                    "id"?: string,"name"?: string
                   }
                   Relationships: [
                     
@@ -57,7 +97,16 @@ export type Database = {
             [_ in never]: never
           }
           Functions: {
-            "is_admin":
+            "admin_update_profile":
+{ Args: { "p_display_name": string,"p_role_id": string,"p_user_id": string }; Returns: undefined
+                           },
+"has_permission":
+{ Args: { "p_action": string,"p_resource": string }; Returns: boolean
+                           },
+"is_admin":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"is_super_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "todo_stats":

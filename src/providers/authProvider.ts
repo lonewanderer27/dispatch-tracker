@@ -1,5 +1,6 @@
 import type { AuthProvider } from '@refinedev/core'
 import { supabase } from '@/lib/supabase'
+import { USER_ROLE_ID } from '@/features/users/roles'
 
 interface Credentials {
   email: string
@@ -60,7 +61,7 @@ export const authProvider = {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('display_name, role')
+      .select('display_name, role_id, roles(name)')
       .eq('id', user.id)
       .maybeSingle()
 
@@ -69,7 +70,8 @@ export const authProvider = {
       id: user.id,
       email: user.email,
       name: displayName === '' ? user.email : displayName,
-      role: profile?.role ?? 'user',
+      role: profile?.roles.name ?? 'User',
+      roleId: profile?.role_id ?? USER_ROLE_ID,
     }
   },
 

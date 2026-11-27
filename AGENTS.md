@@ -26,7 +26,7 @@ The local stack needs Docker (`pnpm db:start`). `supabase/functions/.env` and `.
   - say what is out of scope;
   - tell the implementer to **stop and report** (not fix) when the code does not match the plan's Facts or a gate's Expect.
 - Follow the existing structure: `src/features/<feature>/` for data access and hooks, `src/pages/<resource>/` for pages, `src/providers/` for Refine providers. Use the generated `Tables<'...'>` types; never hand-edit `src/types/database.types.ts` (run `pnpm db:types`).
-- Every new table gets RLS, explicit grants and a pgTAP isolation test (see the README checklist).
+- Every new table gets RLS, explicit grants, policies that call `has_permission`, its own rows in `app_permissions`, and a pgTAP isolation test (see the README checklist).
 - Prettier and ESLint are the formatters; apply them only to files you touch (`pnpm format:check`), never reformat untouched files.
 - Update `README.md` when a script, the layout or a setup step changes. Edit `AGENTS.md` only when a convention or command changes.
 
@@ -40,7 +40,7 @@ The local stack needs Docker (`pnpm db:start`). `supabase/functions/.env` and `.
   4. **Facts (verified YYYY-MM-DD)**: numbered file paths, line numbers and exact strings.
   5. **Decisions already made (do not reopen)**, plus any "Open question (does not block)".
   6. **Out of scope**
-  7. **Steps**, numbered from `0` (backup first when data is at risk, e.g. a DB dump before a migration). Each step has its edits, a **Gate** command and **Expect** text. Large plans group steps into phases, one commit per phase.
+  7. **Steps**, numbered from `0` (backup first when data is at risk, e.g. a DB dump before a migration). Each step has its edits, a **Gate** command and **Expect** text. Large plans group steps into phases, one commit per phase. A plan that makes a major architectural change (for example access control, the data model or auth) ends with a step that documents the change in its own numbered file `docs/architecture/NNNN-Short-Name.md` (NNNN is the next free number, starting at `0001`; create the folder if missing). The file starts with the ticket, the plan path, the date and the status, and `README.md` links to it.
   8. **Rollback**
   9. **Conventional commits**: the ordered commit list (subject, files staged, footer), the branch name and the PR title.
 

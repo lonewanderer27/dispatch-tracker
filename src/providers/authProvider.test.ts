@@ -78,9 +78,22 @@ describe('authProvider', () => {
     auth.getUser.mockResolvedValue({
       data: { user: { id: 'u1', email: 'u@b.co' } },
     })
-    maybeSingle.mockResolvedValue({ data: { display_name: 'Ada', role: 'admin' }, error: null })
+    maybeSingle.mockResolvedValue({
+      data: {
+        display_name: 'Ada',
+        role_id: '30000000-0000-0000-0000-000000000001',
+        roles: { name: 'Admin' },
+      },
+      error: null,
+    })
     const id = await authProvider.getIdentity()
-    expect(id).toEqual({ id: 'u1', email: 'u@b.co', name: 'Ada', role: 'admin' })
+    expect(id).toEqual({
+      id: 'u1',
+      email: 'u@b.co',
+      name: 'Ada',
+      role: 'Admin',
+      roleId: '30000000-0000-0000-0000-000000000001',
+    })
   })
 
   it('getIdentity returns null when signed out', async () => {

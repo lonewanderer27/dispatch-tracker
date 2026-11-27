@@ -45,9 +45,9 @@ select is(
 
 -- 4: profile role defaults to user.
 select is(
-  (select role from public.profiles where id = 'aaaaaaaa-0000-0000-0000-00000000000a'),
-  'user',
-  'new profiles default to role user'
+  (select role_id from public.profiles where id = 'aaaaaaaa-0000-0000-0000-00000000000a'),
+  '30000000-0000-0000-0000-000000000002'::uuid,
+  'new profiles default to the User role'
 );
 
 -- Act as Alice (authenticated).
@@ -88,7 +88,7 @@ select throws_ok(
 
 -- 9: Alice cannot promote herself to admin.
 select throws_ok(
-  $$update public.profiles set role = 'admin' where id = 'aaaaaaaa-0000-0000-0000-00000000000a'$$,
+  $$update public.profiles set role_id = '30000000-0000-0000-0000-000000000001' where id = 'aaaaaaaa-0000-0000-0000-00000000000a'$$,
   '42501',
   null,
   'users cannot change their own role'
@@ -114,7 +114,7 @@ select throws_ok(
 reset role;
 
 -- Promote Carol to admin (as owner, the only path to role changes).
-update public.profiles set role = 'admin' where id = 'cccccccc-0000-0000-0000-00000000000c';
+update public.profiles set role_id = '30000000-0000-0000-0000-000000000001' where id = 'cccccccc-0000-0000-0000-00000000000c';
 
 -- 11: admin override: Carol (admin) sees Alice's and Bob's todos.
 set local role authenticated;
