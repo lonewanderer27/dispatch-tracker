@@ -21,6 +21,8 @@ This plan runs **first**. Phase 1 takes migration number `0003`; every other pla
 - Phase 1 is already committed on this branch (commits `405712f`, `b3394a5`, `460633c`, `09ae121`). Phase 2 adds new commits on the same branch and takes migration number `0004`. **This shifts every other plan (T3C-B5 to T3C-B33) up by one: they now start at `0005`.** The other plans were already renumbered and rewritten in the same change (their migrations and rollback hints use the new numbers, and their policies call `has_permission`).
 - Phase 2 also seeds a local Super Admin user (`superadmin@example.com`).
 
+**Phase 3 (added later, requested directly):** a **Users** sidebar item, visible only to a profile with the Super Admin role, where a Super Admin can update another user's **role** and **display name**. It takes migration number `0005`, so every other plan (T3C-B5 to T3C-B33) moves up by one more: they now start at `0006`. The other plans were renumbered in the same change.
+
 ## Facts (verified 2026-11-27)
 
 1. Branch is `main`. `supabase/migrations/` holds `0001_init.sql` and `0002_todo_stats.sql` only. If anything else is there, **stop and report**.
@@ -97,11 +99,45 @@ Phase 2 builds on Phase 1 being committed. Step 9 re-checks this.
 
 8. **Lock-out.** A Super Admin can remove their own `app_permissions` rights, and then only direct DB access can restore them. Accepted for now; a guard can be added later if wanted.
 
+## Phase 3 facts (verified 2026-11-27 against the working tree)
+
+Phase 3 builds on Phases 1 and 2 being implemented and committed. Step 18 re-checks this.
+
+20. `supabase/migrations/` holds `0001_init.sql`, `0002_todo_stats.sql`, `0003_roles.sql`, `0004_app_permissions.sql`. Phase 3 adds `0005_user_admin.sql`.
+21. `profiles` grants for `authenticated` are `select` and `update (display_name)` only (`0001_init.sql`). Policies: `profiles_select_own`, `profiles_update_own` (own row), `profiles_admin_select` (`is_admin()`, which is true for Admin and Super Admin). So a Super Admin can already read every profile. **A column grant on `role_id` would let every user promote themselves through `profiles_update_own`, so none is added.**
+22. `public.is_admin()` and `public.has_permission(text, text)` exist (Phase 2). `public.is_super_admin()` does not.
+23. `src/App.tsx` imports `import { DashboardOutlined, CheckSquareOutlined } from '@ant-design/icons'`, `import { Authenticated, Refine, type ResourceProps } from '@refinedev/core'`, `import { authProvider } from '@/providers/authProvider'` and `import { TodoShow } from '@/pages/todos/TodoShow'`. `resources` has `dashboard` and `todos` (the `todos` entry ends with `meta: { label: 'Todos', icon: <CheckSquareOutlined /> },` then `},` then `]`). `<Refine>` has the prop line `authProvider={authProvider}`. The `todos` routes end with `<Route path="show/:id" element={<TodoShow />} />` then `</Route>`. There is no `accessControlProvider`.
+24. Installed versions: `@refinedev/core` 5.0.12, `@refinedev/antd` 6.0.3. `ThemedSider` wraps every menu item in `CanAccess` with `resource: <resource name>` and `action: "list"`, so an `accessControlProvider` that answers `{ can: false }` hides the sidebar item without any other change.
+25. `src/providers/authProvider.ts`: the import line `import { supabase } from '@/lib/supabase'`; `.select('display_name, roles(name)')`; and `role: profile?.roles.name ?? 'User',` as the last property of the identity object. `src/providers/authProvider.test.ts` test `getIdentity merges the auth user with the profile row` mocks `{ display_name: 'Ada', roles: { name: 'Admin' } }` and expects `{ id: 'u1', email: 'u@b.co', name: 'Ada', role: 'Admin' }`.
+26. `src/types/db.ts` has the line `export type Todo = Tables<'todos'>`. `src/features/integration/api.ts` exports `AppSupabaseClient` and keeps data access in plain functions that take the client (tests pass a mock). Pages use `useTable`, `useForm` and `Edit`/`List` from `@refinedev/antd` (see `src/pages/todos`).
+27. `e2e/global.setup.ts` logs in as `user@example.com` and saves the state to `e2e/.auth/user.json`; `playwright.config.ts` runs every spec with that state. `pnpm test:e2e` starts the dev server itself.
+28. `docs/architecture/` holds `0001-Role-Based-Access.md`. `README.md` has the lines `  migrations/0004_app_permissions.sql  Super Admin role, app_permissions, has_permission()`, `  pages/dashboard, pages/todos`, `Access control: [0001 Role-based access](docs/architecture/0001-Role-Based-Access.md).`, and the notes bullet containing `and can only be changed with direct DB access.`
+
+## Phase 3 decisions already made (do not reopen)
+
+- **A new sidebar item `Users`**, visible only to a profile with the **Super Admin** role. It opens `/users`: a table of every profile (display name, role, created). Each row has an edit button that opens `/users/edit/:id`, where a Super Admin changes the **display name** and the **role** and saves.
+- **The database decides, the UI follows.** Hiding the menu item and redirecting `/users` are conveniences. The real rule is in Postgres: the change goes through one `security definer` function `public.admin_update_profile(p_user_id, p_display_name, p_role_id)` that raises `42501` unless `public.is_super_admin()` is true. No grant and no policy on `profiles` changes.
+- **`public.is_super_admin()`** is true when the caller's profile has the fixed Super Admin role id `30000000-0000-0000-0000-000000000003` (same pattern as `is_admin()`: `security definer`, `stable`, `set search_path = ''`, executable by `authenticated` only).
+- **Rules inside the function**: the display name is trimmed (null becomes empty) and may be at most 100 characters (`22023`); a Super Admin cannot change **their own role** (`22023`), which guarantees at least one Super Admin always exists; an unknown user raises `P0002`; an unknown role fails the foreign key (`23503`). A Super Admin can change their own display name.
+- **The `profiles` row in `app_permissions` is not changed.** It stays informational (it says own `display_name` only for ordinary use); the Users page is gated by `is_super_admin()`, not by the matrix.
+- **Refine resource**: `name: 'profiles'` (the table), routes under `/users`, label `Users`. The access control provider restricts the resource name `profiles` to Super Admins and allows every other resource.
+- **The web identity** gets a new `roleId` field (the role id), so the UI compares ids, not names. `role` (the name) stays.
+- **No new dependency.** The edit page is a plain antd `Form` that calls the RPC; it does not use the data provider's `update`.
+- **Out of scope for the page**: creating or deleting users, resetting passwords, changing email, creating roles, editing `app_permissions`, search and filters, showing email (see open question 9).
+- Local stack, local data only.
+
+### Phase 3 open questions (do not block)
+
+9. **Email.** `profiles` has no email column (it lives in `auth.users`), so the list cannot show it. Should a later change add an `admin_list_users()` function that returns the email too?
+10. **Who may open the page.** Only Super Admin, as asked. Admin can still read every profile row through the database, just not through this page.
+11. **Role change is immediate.** The affected user keeps their old session identity until the page reloads, but the database applies the new role on their next request.
+
 ## Out of scope
 
 - Any other table or story; the policies of `profiles` and `todos` (including moving them onto `has_permission`). The other plans were updated in the same change as this one, but running them is out of scope here.
 - An Admin or Super Admin UI for roles or permissions, Dispatcher or Finance roles, pages for `roles` or `app_permissions`.
-- A way to change a user's role from the app.
+- A way to change a user's role from the app (Phase 1 and 2 only; Phase 3 adds it for Super Admins).
+- Creating or deleting users, password resets, email changes, creating roles, editing `app_permissions` from the app.
 - Hosted (SIT/production) data or dashboard changes.
 - Playwright e2e specs.
 
@@ -1259,12 +1295,866 @@ pnpm test:all
 
 **Expect:** lint, typecheck, vitest, pgTAP, Deno and Playwright all pass. Then `git status --short` lists only: this plan, `supabase/migrations/0004_app_permissions.sql`, `supabase/seed.sql`, `supabase/tests/database/rbac.test.sql`, `supabase/tests/database/roles.test.sql`, `supabase/tests/database/seed.test.sql`, `src/types/database.types.ts`, `README.md`, `AGENTS.md`, `docs/architecture/0001-Role-Based-Access.md`, plus the changed plan files under `.claude/plans/backend/` for T3C-B5 to T3C-B33 and T3C-S31. Anything else: stop and report.
 
+## Phase 3 steps
+
+Run these only after Phases 1 and 2 are done and green. Working directory: the repo root.
+
+### Step 18. Baseline
+
+```bash
+git branch --show-current && git status --short && ls supabase/migrations && pnpm db:reset && pnpm test:db
+```
+
+**Expect:** branch `feat/T3C-B0-Users-Table`; `git status --short` lists only the plan files under `.claude/plans/backend/` (edited before Phase 3 and committed in Phase 3 commits 18 and 19), with no other changes; the `ls` shows exactly `0001_init.sql`, `0002_todo_stats.sql`, `0003_roles.sql`, `0004_app_permissions.sql`; `db:reset` exits 0; `pnpm test:db` ends with `Result: PASS` (85 tests: `rbac` 38, `rls` 15, `roles` 22, `seed` 4, `todo_stats` 6). Anything else: stop and report.
+
+### Step 19. Migration (create file)
+
+Create `supabase/migrations/0005_user_admin.sql` with exactly this content:
+
+```sql
+-- 0005_user_admin: a Super Admin can change another user's display name and role.
+-- No column grant or policy on profiles changes: users still cannot write role_id. The change
+-- goes through one security definer function that checks the caller first.
+
+create function public.is_super_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.profiles p
+    where p.id = (select auth.uid())
+      and p.role_id = '30000000-0000-0000-0000-000000000003'
+  );
+$$;
+
+create function public.admin_update_profile(p_user_id uuid, p_display_name text, p_role_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_name text := coalesce(trim(p_display_name), '');
+begin
+  if not (select public.is_super_admin()) then
+    raise exception 'only a Super Admin can update a user' using errcode = '42501';
+  end if;
+
+  if char_length(v_name) > 100 then
+    raise exception 'display name must be 100 characters or fewer' using errcode = '22023';
+  end if;
+
+  -- A Super Admin cannot change their own role, so at least one Super Admin always exists.
+  if p_user_id = (select auth.uid())
+     and p_role_id is distinct from (select role_id from public.profiles where id = p_user_id) then
+    raise exception 'a Super Admin cannot change their own role' using errcode = '22023';
+  end if;
+
+  update public.profiles
+  set display_name = v_name, role_id = p_role_id
+  where id = p_user_id;
+
+  if not found then
+    raise exception 'user not found' using errcode = 'P0002';
+  end if;
+end;
+$$;
+
+revoke all on function public.is_super_admin() from public, anon;
+revoke all on function public.admin_update_profile(uuid, text, uuid) from public, anon;
+grant execute on function public.is_super_admin() to authenticated;
+grant execute on function public.admin_update_profile(uuid, text, uuid) to authenticated;
+```
+
+### Step 20. Apply it and check
+
+```bash
+pnpm exec supabase migration up --local
+docker exec supabase_db_dispatch-tracker psql -U postgres -At -c "select proname from pg_proc where pronamespace = 'public'::regnamespace and proname in ('admin_update_profile', 'is_super_admin') order by proname"
+```
+
+**Expect:** `migration up` applies `0005_user_admin.sql` with no error. The query prints exactly:
+
+```
+admin_update_profile
+is_super_admin
+```
+
+### Step 21. New pgTAP test (create file)
+
+Create `supabase/tests/database/user_admin.test.sql` with exactly this content:
+
+```sql
+-- pgTAP: is_super_admin() and admin_update_profile().
+-- Run with: pnpm test:db   (supabase test db)
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(18);
+
+-- Fixed test identities. The whole file runs in one transaction and rolls back.
+-- Alice is a User, Carol is an Admin, Sam is a Super Admin.
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+  confirmation_token, email_change, email_change_token_new, recovery_token)
+values
+  ('aaaaaaaa-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000000000',
+   'authenticated', 'authenticated', 'alice@test.local', '', '{}', '{}', now(), now(), '', '', '', ''),
+  ('cccccccc-0000-0000-0000-00000000000c', '00000000-0000-0000-0000-000000000000',
+   'authenticated', 'authenticated', 'carol@test.local', '', '{}', '{}', now(), now(), '', '', '', ''),
+  ('dddddddd-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-000000000000',
+   'authenticated', 'authenticated', 'sam@test.local', '', '{}', '{}', now(), now(), '', '', '', '');
+
+update public.profiles set role_id = '30000000-0000-0000-0000-000000000001'
+  where id = 'cccccccc-0000-0000-0000-00000000000c';
+update public.profiles set role_id = '30000000-0000-0000-0000-000000000003'
+  where id = 'dddddddd-0000-0000-0000-00000000000d';
+
+-- 1: anon cannot call the function.
+set local role anon;
+select throws_ok(
+  $$select public.admin_update_profile('aaaaaaaa-0000-0000-0000-00000000000a', 'Hacked', '30000000-0000-0000-0000-000000000002')$$,
+  '42501',
+  null,
+  'anon cannot call admin_update_profile'
+);
+reset role;
+
+-- Act as Alice (User).
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-0000-0000-00000000000a","role":"authenticated"}', true);
+select set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-0000-0000-00000000000a', true);
+
+-- 2-3
+select throws_ok(
+  $$select public.admin_update_profile('aaaaaaaa-0000-0000-0000-00000000000a', 'Alice', '30000000-0000-0000-0000-000000000003')$$,
+  '42501',
+  null,
+  'a User cannot call admin_update_profile'
+);
+select is(public.is_super_admin(), false, 'is_super_admin() is false for a User');
+reset role;
+
+-- Act as Carol (Admin).
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"cccccccc-0000-0000-0000-00000000000c","role":"authenticated"}', true);
+select set_config('request.jwt.claim.sub', 'cccccccc-0000-0000-0000-00000000000c', true);
+
+-- 4-6
+select throws_ok(
+  $$select public.admin_update_profile('aaaaaaaa-0000-0000-0000-00000000000a', 'Alice', '30000000-0000-0000-0000-000000000002')$$,
+  '42501',
+  null,
+  'an Admin cannot call admin_update_profile'
+);
+select throws_ok(
+  $$update public.profiles set role_id = '30000000-0000-0000-0000-000000000003' where id = 'cccccccc-0000-0000-0000-00000000000c'$$,
+  '42501',
+  null,
+  'an Admin still cannot write role_id directly'
+);
+select is(public.is_super_admin(), false, 'is_super_admin() is false for an Admin');
+reset role;
+
+-- Act as Sam (Super Admin).
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"dddddddd-0000-0000-0000-00000000000d","role":"authenticated"}', true);
+select set_config('request.jwt.claim.sub', 'dddddddd-0000-0000-0000-00000000000d', true);
+
+-- 7-11: a Super Admin reads and updates other users.
+select is(public.is_super_admin(), true, 'is_super_admin() is true for a Super Admin');
+select ok(
+  (select count(*) from public.profiles
+     where id in ('aaaaaaaa-0000-0000-0000-00000000000a', 'cccccccc-0000-0000-0000-00000000000c',
+                  'dddddddd-0000-0000-0000-00000000000d')) = 3,
+  'a Super Admin can read every profile'
+);
+select lives_ok(
+  $$select public.admin_update_profile('aaaaaaaa-0000-0000-0000-00000000000a', 'Alice Renamed', '30000000-0000-0000-0000-000000000001')$$,
+  'a Super Admin can update another user'
+);
+select is(
+  (select display_name from public.profiles where id = 'aaaaaaaa-0000-0000-0000-00000000000a'),
+  'Alice Renamed',
+  'the display name was updated'
+);
+select is(
+  (select role_id from public.profiles where id = 'aaaaaaaa-0000-0000-0000-00000000000a'),
+  '30000000-0000-0000-0000-000000000001'::uuid,
+  'the role was updated'
+);
+
+-- 12-13: the display name is trimmed.
+select lives_ok(
+  $$select public.admin_update_profile('aaaaaaaa-0000-0000-0000-00000000000a', '  Padded  ', '30000000-0000-0000-0000-000000000001')$$,
+  'a padded display name is accepted'
+);
+select is(
+  (select display_name from public.profiles where id = 'aaaaaaaa-0000-0000-0000-00000000000a'),
+  'Padded',
+  'the display name was trimmed'
+);
+
+-- 14: too long.
+select throws_ok(
+  $$select public.admin_update_profile('aaaaaaaa-0000-0000-0000-00000000000a', repeat('x', 101), '30000000-0000-0000-0000-000000000001')$$,
+  '22023',
+  null,
+  'a display name over 100 characters is rejected'
+);
+
+-- 15-16: own role is locked, own display name is not.
+select throws_ok(
+  $$select public.admin_update_profile('dddddddd-0000-0000-0000-00000000000d', 'Sam', '30000000-0000-0000-0000-000000000001')$$,
+  '22023',
+  null,
+  'a Super Admin cannot change their own role'
+);
+select lives_ok(
+  $$select public.admin_update_profile('dddddddd-0000-0000-0000-00000000000d', 'Sam Renamed', '30000000-0000-0000-0000-000000000003')$$,
+  'a Super Admin can change their own display name'
+);
+
+-- 17-18: unknown user and unknown role.
+select throws_ok(
+  $$select public.admin_update_profile('99999999-9999-9999-9999-999999999999', 'Nobody', '30000000-0000-0000-0000-000000000002')$$,
+  'P0002',
+  null,
+  'an unknown user is rejected'
+);
+select throws_ok(
+  $$select public.admin_update_profile('aaaaaaaa-0000-0000-0000-00000000000a', 'Alice', '99999999-9999-9999-9999-999999999999')$$,
+  '23503',
+  null,
+  'an unknown role is rejected'
+);
+reset role;
+
+select * from finish();
+rollback;
+```
+
+### Step 22. Regenerate the types and run the database tests
+
+```bash
+pnpm db:reset && grep -c "admin_update_profile" src/types/database.types.ts && pnpm test:db
+```
+
+**Expect:** `db:reset` exits 0 (it regenerates `src/types/database.types.ts`); the `grep` prints a number greater than `0`; every file reports `ok` and the summary ends with `Result: PASS`; `user_admin.test.sql` runs 18 tests (103 in total). If `rls.test.sql` or another earlier file fails, stop and report.
+
+### Step 23. Web: types, data access and access control
+
+**23a. `src/types/db.ts`.** Find: `export type Todo = Tables<'todos'>`
+Replace with:
+
+```ts
+export type Todo = Tables<'todos'>
+export type Profile = Tables<'profiles'>
+export type UserRow = Profile & { roles: { name: string } | null }
+```
+
+**23b. Create `src/features/users/roles.ts`:**
+
+```ts
+// Fixed role ids, created in supabase/migrations/0003_roles.sql and 0004_app_permissions.sql.
+export const USER_ROLE_ID = '30000000-0000-0000-0000-000000000002'
+export const SUPER_ADMIN_ROLE_ID = '30000000-0000-0000-0000-000000000003'
+
+export function isSuperAdmin(roleId: string | undefined): boolean {
+  return roleId === SUPER_ADMIN_ROLE_ID
+}
+```
+
+**23c. Create `src/features/users/api.ts`:**
+
+```ts
+// Data access for the Users page. Takes the client as an argument so tests can pass a mock.
+import type { AppSupabaseClient } from '@/features/integration/api'
+
+export interface UpdateUserInput {
+  id: string
+  displayName: string
+  roleId: string
+}
+
+/** Calls the admin_update_profile function. The database rejects anyone who is not a Super Admin. */
+export async function updateUserProfile(
+  client: AppSupabaseClient,
+  input: UpdateUserInput,
+): Promise<void> {
+  const { error } = await client.rpc('admin_update_profile', {
+    p_user_id: input.id,
+    p_display_name: input.displayName,
+    p_role_id: input.roleId,
+  })
+  if (error) throw new Error(error.message)
+}
+```
+
+**23d. Create `src/features/users/api.test.ts`:**
+
+```ts
+import { describe, expect, it, vi } from 'vitest'
+import type { AppSupabaseClient } from '@/features/integration/api'
+import { updateUserProfile } from '@/features/users/api'
+
+const input = {
+  id: 'u1',
+  displayName: 'Ada',
+  roleId: '30000000-0000-0000-0000-000000000001',
+}
+
+describe('updateUserProfile', () => {
+  it('calls the admin_update_profile function with the right arguments', async () => {
+    const client = { rpc: vi.fn().mockResolvedValue({ data: null, error: null }) }
+    await updateUserProfile(client as unknown as AppSupabaseClient, input)
+    expect(client.rpc).toHaveBeenCalledWith('admin_update_profile', {
+      p_user_id: 'u1',
+      p_display_name: 'Ada',
+      p_role_id: '30000000-0000-0000-0000-000000000001',
+    })
+  })
+
+  it('throws the database message when the call fails', async () => {
+    const client = {
+      rpc: vi.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'only a Super Admin can update a user' },
+      }),
+    }
+    await expect(updateUserProfile(client as unknown as AppSupabaseClient, input)).rejects.toThrow(
+      'only a Super Admin can update a user',
+    )
+  })
+})
+```
+
+**23e. `src/providers/authProvider.ts`.** Three edits.
+
+Edit A. Find: `import { supabase } from '@/lib/supabase'`
+Replace with:
+
+```ts
+import { supabase } from '@/lib/supabase'
+import { USER_ROLE_ID } from '@/features/users/roles'
+```
+
+Edit B. Find: `      .select('display_name, roles(name)')`
+Replace with: `      .select('display_name, role_id, roles(name)')`
+
+Edit C. Find: `      role: profile?.roles.name ?? 'User',`
+Replace with:
+
+```ts
+      role: profile?.roles.name ?? 'User',
+      roleId: profile?.role_id ?? USER_ROLE_ID,
+```
+
+**23f. `src/providers/authProvider.test.ts`.** Two edits.
+
+Edit A. Find:
+
+```ts
+      data: { display_name: 'Ada', roles: { name: 'Admin' } },
+```
+
+Replace with:
+
+```ts
+      data: {
+        display_name: 'Ada',
+        role_id: '30000000-0000-0000-0000-000000000001',
+        roles: { name: 'Admin' },
+      },
+```
+
+Edit B. Find: `    expect(id).toEqual({ id: 'u1', email: 'u@b.co', name: 'Ada', role: 'Admin' })`
+Replace with:
+
+```ts
+expect(id).toEqual({
+  id: 'u1',
+  email: 'u@b.co',
+  name: 'Ada',
+  role: 'Admin',
+  roleId: '30000000-0000-0000-0000-000000000001',
+})
+```
+
+**23g. Create `src/providers/accessControlProvider.ts`:**
+
+```ts
+import type { AccessControlProvider } from '@refinedev/core'
+import { isSuperAdmin } from '@/features/users/roles'
+import { authProvider } from '@/providers/authProvider'
+
+// Resource names only a Super Admin may open. This only shapes the UI (hides the menu item and
+// redirects); the database enforces the rule (see admin_update_profile in 0005_user_admin.sql).
+const SUPER_ADMIN_ONLY = new Set(['profiles'])
+
+export const accessControlProvider: AccessControlProvider = {
+  can: async ({ resource }) => {
+    if (!resource || !SUPER_ADMIN_ONLY.has(resource)) return { can: true }
+    const identity = await authProvider.getIdentity()
+    if (identity && isSuperAdmin(identity.roleId)) return { can: true }
+    return { can: false, reason: 'Only a Super Admin can manage users' }
+  },
+}
+```
+
+**23h. Create `src/providers/accessControlProvider.test.ts`:**
+
+```ts
+import { describe, expect, it, vi } from 'vitest'
+import { SUPER_ADMIN_ROLE_ID, USER_ROLE_ID } from '@/features/users/roles'
+
+const getIdentity = vi.fn<() => Promise<{ id: string; roleId: string } | null>>()
+
+vi.mock('@/providers/authProvider', () => ({
+  authProvider: { getIdentity: () => getIdentity() },
+}))
+
+// Imported after the mock is registered.
+const { accessControlProvider } = await import('@/providers/accessControlProvider')
+
+describe('accessControlProvider', () => {
+  it('allows resources that are not restricted without asking who the user is', async () => {
+    const res = await accessControlProvider.can({ resource: 'todos', action: 'list' })
+    expect(res).toEqual({ can: true })
+    expect(getIdentity).not.toHaveBeenCalled()
+  })
+
+  it('allows a Super Admin to open the users resource', async () => {
+    getIdentity.mockResolvedValue({ id: 'u1', roleId: SUPER_ADMIN_ROLE_ID })
+    const res = await accessControlProvider.can({ resource: 'profiles', action: 'list' })
+    expect(res).toEqual({ can: true })
+  })
+
+  it('denies a User and a signed-out visitor', async () => {
+    getIdentity.mockResolvedValue({ id: 'u2', roleId: USER_ROLE_ID })
+    const asUser = await accessControlProvider.can({ resource: 'profiles', action: 'list' })
+    expect(asUser.can).toBe(false)
+    getIdentity.mockResolvedValue(null)
+    const signedOut = await accessControlProvider.can({ resource: 'profiles', action: 'list' })
+    expect(signedOut.can).toBe(false)
+  })
+})
+```
+
+**Gate:**
+
+```bash
+pnpm exec prettier --write src/features/users src/providers/accessControlProvider.ts src/providers/accessControlProvider.test.ts src/providers/authProvider.ts src/providers/authProvider.test.ts src/types/db.ts && pnpm lint && pnpm typecheck && pnpm test
+```
+
+**Expect:** all exit 0 (`api.test.ts` adds 2 tests and `accessControlProvider.test.ts` adds 3). A type error on `rpc('admin_update_profile', ...)` means the types were not regenerated: run `pnpm db:reset` and repeat; if it persists, stop and report.
+
+### Step 24. Web: pages and wiring
+
+**24a. Create `src/pages/users/UserList.tsx`:**
+
+```tsx
+import { EditButton, List, useTable } from '@refinedev/antd'
+import { Space, Table, Tag } from 'antd'
+import { SUPER_ADMIN_ROLE_ID } from '@/features/users/roles'
+import type { UserRow } from '@/types/db'
+
+export function UserList() {
+  const { tableProps } = useTable<UserRow>({
+    resource: 'profiles',
+    syncWithLocation: true,
+    meta: { select: '*, roles(name)' },
+    sorters: { initial: [{ field: 'created_at', order: 'asc' }] },
+  })
+
+  return (
+    <List canCreate={false}>
+      <Table {...tableProps} rowKey="id">
+        <Table.Column<UserRow>
+          dataIndex="display_name"
+          title="Display name"
+          render={(value: string) => (value === '' ? '(none)' : value)}
+        />
+        <Table.Column<UserRow>
+          title="Role"
+          render={(_, record) => (
+            <Tag color={record.role_id === SUPER_ADMIN_ROLE_ID ? 'red' : 'default'}>
+              {record.roles?.name ?? 'Unknown'}
+            </Tag>
+          )}
+        />
+        <Table.Column<UserRow>
+          dataIndex="created_at"
+          title="Created"
+          render={(value: string) => new Date(value).toLocaleString()}
+          sorter
+        />
+        <Table.Column<UserRow>
+          title="Actions"
+          render={(_, record) => (
+            <Space>
+              <EditButton hideText size="small" recordItemId={record.id} />
+            </Space>
+          )}
+        />
+      </Table>
+    </List>
+  )
+}
+```
+
+**24b. Create `src/pages/users/UserEdit.tsx`:**
+
+```tsx
+import { useState } from 'react'
+import { useGetIdentity, useInvalidate, type HttpError } from '@refinedev/core'
+import { Edit, useForm, useSelect } from '@refinedev/antd'
+import { Form, Input, Select, message } from 'antd'
+import { useNavigate } from 'react-router'
+import { updateUserProfile } from '@/features/users/api'
+import { supabase } from '@/lib/supabase'
+import type { Tables, UserRow } from '@/types/db'
+
+interface FormValues {
+  display_name: string
+  role_id: string
+}
+
+export function UserEdit() {
+  const navigate = useNavigate()
+  const invalidate = useInvalidate()
+  const { data: identity } = useGetIdentity<{ id: string }>()
+  const [saving, setSaving] = useState(false)
+
+  const { formProps, saveButtonProps, query, id } = useForm<UserRow, HttpError, FormValues>({
+    action: 'edit',
+    resource: 'profiles',
+    meta: { select: '*, roles(name)' },
+  })
+  const { selectProps } = useSelect<Tables<'roles'>>({
+    resource: 'roles',
+    optionLabel: 'name',
+    optionValue: 'id',
+  })
+
+  const isSelf = identity?.id === String(id)
+
+  async function onFinish(values: FormValues) {
+    if (id === undefined) return
+    setSaving(true)
+    try {
+      await updateUserProfile(supabase, {
+        id: String(id),
+        displayName: values.display_name,
+        roleId: values.role_id,
+      })
+      await invalidate({ resource: 'profiles', invalidates: ['list', 'detail'] })
+      void message.success('User updated')
+      void navigate('/users')
+    } catch (err) {
+      void message.error(err instanceof Error ? err.message : 'Update failed')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Edit
+      saveButtonProps={{ ...saveButtonProps, loading: saving }}
+      isLoading={query?.isLoading ?? false}
+      canDelete={false}
+    >
+      <Form
+        {...formProps}
+        onFinish={(values: FormValues) => void onFinish(values)}
+        layout="vertical"
+      >
+        <Form.Item
+          label="Display name"
+          name="display_name"
+          rules={[{ max: 100, message: 'Keep it under 100 characters' }]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          label="Role"
+          name="role_id"
+          rules={[{ required: true, message: 'Role is required' }]}
+          extra={isSelf ? 'You cannot change your own role.' : undefined}
+        >
+          <Select {...selectProps} disabled={isSelf} />
+        </Form.Item>
+      </Form>
+    </Edit>
+  )
+}
+```
+
+**24c. `src/App.tsx`.** Seven edits.
+
+Edit A. Find: `import { Authenticated, Refine, type ResourceProps } from '@refinedev/core'`
+Replace with: `import { Authenticated, CanAccess, Refine, type ResourceProps } from '@refinedev/core'`
+
+Edit B. Find: `import { DashboardOutlined, CheckSquareOutlined } from '@ant-design/icons'`
+Replace with: `import { DashboardOutlined, CheckSquareOutlined, TeamOutlined } from '@ant-design/icons'`
+
+Edit C. Find: `import { authProvider } from '@/providers/authProvider'`
+Replace with:
+
+```tsx
+import { authProvider } from '@/providers/authProvider'
+import { accessControlProvider } from '@/providers/accessControlProvider'
+```
+
+Edit D. Find: `import { TodoShow } from '@/pages/todos/TodoShow'`
+Replace with:
+
+```tsx
+import { TodoShow } from '@/pages/todos/TodoShow'
+import { UserList } from '@/pages/users/UserList'
+import { UserEdit } from '@/pages/users/UserEdit'
+```
+
+Edit E. Find:
+
+```tsx
+    meta: { label: 'Todos', icon: <CheckSquareOutlined /> },
+  },
+]
+```
+
+Replace with:
+
+```tsx
+    meta: { label: 'Todos', icon: <CheckSquareOutlined /> },
+  },
+  {
+    name: 'profiles',
+    list: '/users',
+    edit: '/users/edit/:id',
+    meta: { label: 'Users', icon: <TeamOutlined /> },
+  },
+]
+```
+
+Edit F. Find: `        authProvider={authProvider}`
+Replace with:
+
+```tsx
+authProvider = { authProvider }
+accessControlProvider = { accessControlProvider }
+```
+
+Edit G. Find:
+
+```tsx
+              <Route path="show/:id" element={<TodoShow />} />
+            </Route>
+```
+
+Replace with:
+
+```tsx
+              <Route path="show/:id" element={<TodoShow />} />
+            </Route>
+            <Route
+              path="/users"
+              element={
+                <CanAccess resource="profiles" action="list" fallback={<Navigate to="/" replace />}>
+                  <Outlet />
+                </CanAccess>
+              }
+            >
+              <Route index element={<UserList />} />
+              <Route path="edit/:id" element={<UserEdit />} />
+            </Route>
+```
+
+**Gate:**
+
+```bash
+pnpm exec prettier --write src/pages/users src/App.tsx && pnpm lint && pnpm typecheck && pnpm test
+```
+
+**Expect:** all exit 0. If a type error names `useGetIdentity`, `useForm` (`id`), `canDelete` or `useSelect`, the installed Refine version differs from Fact 24: stop and report the exact error.
+
+### Step 25. End-to-end spec (create file)
+
+Create `e2e/users.spec.ts` with exactly this content:
+
+```ts
+import { test, expect, type Page } from '@playwright/test'
+
+const USER_EDIT_URL = '/users/edit/22222222-2222-2222-2222-222222222222'
+
+async function signInAsSuperAdmin(page: Page) {
+  await page.goto('/login')
+  await page.getByLabel('Email').fill('superadmin@example.com')
+  await page.getByLabel('Password').fill('superadmin-password-123') // local seed only
+  await page.getByRole('button', { name: /sign in/i }).click()
+  await expect(page.getByTestId('btn-call-rpc')).toBeVisible()
+}
+
+async function renameUser(page: Page, name: string) {
+  await page.goto(USER_EDIT_URL)
+  const field = page.getByLabel('Display name')
+  await expect(field).not.toHaveValue('')
+  await field.fill(name)
+  await page.getByRole('button', { name: /save/i }).click()
+  await expect(page.getByRole('cell', { name, exact: true })).toBeVisible()
+}
+
+test.describe('as a normal user', () => {
+  test('the Users menu item is hidden and /users redirects home', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByTestId('btn-call-rpc')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Todos' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Users' })).toHaveCount(0)
+    await page.goto('/users')
+    await expect(page).toHaveURL(/\/$/)
+  })
+})
+
+test.describe('as a super admin', () => {
+  test.use({ storageState: { cookies: [], origins: [] } })
+
+  test('sees Users and can change a display name', async ({ page }) => {
+    await signInAsSuperAdmin(page)
+    await page.getByRole('link', { name: 'Users' }).click()
+    await expect(page.getByRole('cell', { name: 'Local User', exact: true })).toBeVisible()
+    try {
+      await renameUser(page, 'Local User (edited)')
+    } finally {
+      await renameUser(page, 'Local User') // leave the seeded user as we found it
+    }
+  })
+})
+```
+
+**Gate:**
+
+```bash
+pnpm exec prettier --write e2e/users.spec.ts && pnpm exec playwright test e2e/users.spec.ts
+```
+
+**Expect:** 2 tests pass (plus the `setup` project). If the normal user test fails because the Users link is visible, or the page redirects wrongly, stop and report; do not weaken the assertion.
+
+### Step 26. Document the architecture change (`docs/architecture/0002-User-Management.md`)
+
+This is a major change to who can do what, so it gets its own numbered file (convention from Step 15b); the next free number is `0002`.
+
+Create `docs/architecture/0002-User-Management.md` with exactly this content:
+
+```markdown
+# 0002 User management
+
+- Ticket: T3C-B0
+- Plan: `.claude/plans/backend/T3C-B0-Users-Table.md` (Phase 3)
+- Date: 2026-11-27
+- Status: implemented
+- Builds on: [0001 Role-based access](0001-Role-Based-Access.md)
+
+## Summary
+
+A Super Admin can change another user's display name and role from a Users page. Nobody else can.
+
+## How it works
+
+- `public.is_super_admin()` is true when the caller's profile has the Super Admin role.
+- `public.admin_update_profile(user_id, display_name, role_id)` is the only way to change someone
+  else's profile or any `role_id`. It is `security definer` and raises `42501` unless the caller is a
+  Super Admin. It trims the name, limits it to 100 characters, and does not let a Super Admin change
+  their own role, so at least one Super Admin always exists.
+- No grant or policy on `profiles` changed. Users can still update only their own `display_name`.
+- The web app has an `accessControlProvider` that allows the `profiles` resource only for a Super Admin
+  (the identity carries `roleId`). That hides the Users sidebar item and redirects `/users` to the
+  dashboard. It is a convenience: the database is what enforces the rule.
+- The Users page lists every profile (a Super Admin can already read them all) and edits through the
+  function, not through the data provider.
+
+## Known limits
+
+- The list shows no email address, because `profiles` has no email column.
+- A changed role applies on the user's next request; their open page keeps showing the old role until
+  it reloads.
+- There is no way to create or delete users or roles from the app.
+```
+
+Then:
+
+**26a. `docs/architecture/0001-Role-Based-Access.md`.** Two edits.
+
+Edit A. Find (two lines):
+
+```
+- `role_id` is column-protected: signed-in users can update only `profiles.display_name`. A role is
+  assigned only with direct database access.
+```
+
+Replace with:
+
+```
+- `role_id` is column-protected: signed-in users can update only `profiles.display_name`. Only a
+  Super Admin can change a role, through a function (see 0002 User management).
+```
+
+Edit B. Find: `- Nothing in the app lets a user change a role.`
+Replace with: `- Only a Super Admin can change a role, from the Users page (see 0002 User management).`
+
+**26b. `README.md`.** Five edits.
+
+Edit A. Find: `  migrations/0004_app_permissions.sql  Super Admin role, app_permissions, has_permission()`
+Replace with:
+
+```
+  migrations/0004_app_permissions.sql  Super Admin role, app_permissions, has_permission()
+  migrations/0005_user_admin.sql  is_super_admin(), admin_update_profile()
+```
+
+Edit B. Find: `  pages/dashboard, pages/todos`
+Replace with: `  pages/dashboard, pages/todos, pages/users`
+
+Edit C. Find: `  features/integration/        data access + hooks for dashboard checks`
+Replace with:
+
+```
+  features/integration/        data access + hooks for dashboard checks
+  features/users/              role ids and the Super Admin user update call
+```
+
+Edit D. Find: `Access control: [0001 Role-based access](docs/architecture/0001-Role-Based-Access.md).`
+Replace with: `Access control: [0001 Role-based access](docs/architecture/0001-Role-Based-Access.md). Users page: [0002 User management](docs/architecture/0002-User-Management.md).`
+
+Edit E. Find: `is column-protected and can only be changed with direct DB access.`
+Replace with: `is column-protected: only a Super Admin can change it, from the Users page.`
+
+Then run `pnpm exec prettier --write README.md docs/architecture/0002-User-Management.md docs/architecture/0001-Role-Based-Access.md`.
+
+### Step 27. Phase 3 gates
+
+```bash
+pnpm exec prettier --check README.md docs/architecture .claude/plans/backend/T3C-B0-Users-Table.md e2e/users.spec.ts src/pages/users src/features/users
+```
+
+**Expect:** `All matched files use Prettier code style!` If a file is listed, run `pnpm exec prettier --write` on **only that file**, then repeat.
+
+```bash
+pnpm test:all
+```
+
+**Expect:** lint, typecheck, vitest, pgTAP (103 tests), Deno and Playwright all pass. Then `git status --short` lists only: this plan, `supabase/migrations/0005_user_admin.sql`, `supabase/tests/database/user_admin.test.sql`, `src/types/database.types.ts`, `src/types/db.ts`, `src/features/users/roles.ts`, `src/features/users/api.ts`, `src/features/users/api.test.ts`, `src/providers/accessControlProvider.ts`, `src/providers/accessControlProvider.test.ts`, `src/providers/authProvider.ts`, `src/providers/authProvider.test.ts`, `src/pages/users/UserList.tsx`, `src/pages/users/UserEdit.tsx`, `src/App.tsx`, `e2e/users.spec.ts`, `docs/architecture/0002-User-Management.md`, `docs/architecture/0001-Role-Based-Access.md`, `README.md`, plus the changed plan files under `.claude/plans/backend/` for T3C-B5 to T3C-B33 and T3C-S31. Anything else: stop and report.
+
 ## Rollback
 
+- Phase 3, before commit: `git restore --staged --worktree src/types/database.types.ts src/types/db.ts src/providers/authProvider.ts src/providers/authProvider.test.ts src/App.tsx README.md docs/architecture/0001-Role-Based-Access.md && rm -r supabase/migrations/0005_user_admin.sql supabase/tests/database/user_admin.test.sql src/features/users src/providers/accessControlProvider.ts src/providers/accessControlProvider.test.ts src/pages/users e2e/users.spec.ts docs/architecture/0002-User-Management.md`, then `pnpm db:reset`.
+- Phase 3, after merge, if a hosted DB already has `0005`: add a new migration (next free number) that drops `public.admin_update_profile(uuid, text, uuid)` and `public.is_super_admin()`. Nothing else in the database changed, so no data is touched.
 - Phase 2, before commit: `git restore --staged --worktree supabase/seed.sql supabase/tests/database/roles.test.sql supabase/tests/database/seed.test.sql README.md AGENTS.md src/types/database.types.ts && rm supabase/migrations/0004_app_permissions.sql supabase/tests/database/rbac.test.sql`, then `pnpm db:reset`.
 - Phase 2, after merge, if a hosted DB already has `0004`: add a new migration (next free number) that moves any profile with the Super Admin role to Admin, recreates `roles_select_authenticated` and `roles_admin_all` exactly as in `0003_roles.sql`, restores `is_admin()` to test only the Admin id, then drops the `roles_*` policies of this phase, `public.has_permission(text, text)`, `public.app_permissions`, and the Super Admin role row. Stop and ask first if other tables already call `has_permission` (every table from T3C-B5 to T3C-B33 does, so none of them may be applied first).
 - Phase 1, before commit: `git switch main && git branch -D feat/T3C-B0-Users-Table`, then `pnpm db:reset`. To restore the pre-change local data, load `~/dispatch-tracker-pre-roles.sql` after the reset (the seed already recreates the same rows, so it is usually unnecessary).
-- After merge, if a hosted DB already has `0003`: add `0027_revert_roles.sql` (use the next free number) that adds `profiles.role text not null default 'user' check (role in ('user', 'admin'))`, sets it from `role_id` (`Admin` id becomes `'admin'`, anything else `'user'`), restores the old `is_admin()` body (`p.role = 'admin'`), then drops `role_id` and `public.roles`. Stop and ask first if other tables already use `is_admin()` for their policies; they keep working because the function name does not change.
+- After merge, if a hosted DB already has `0003`: add a revert migration with the next free number (the table plans now run to `0027`) that adds `profiles.role text not null default 'user' check (role in ('user', 'admin'))`, sets it from `role_id` (`Admin` id becomes `'admin'`, anything else `'user'`), restores the old `is_admin()` body (`p.role = 'admin'`), then drops `role_id` and `public.roles`. Stop and ask first if other tables already use `is_admin()` for their policies; they keep working because the function name does not change.
 
 ## Conventional commits
 
@@ -1304,5 +2194,30 @@ Phase 2 (new commits on the same branch; Phase 1 commits 1-4 already exist):
 11. `docs(plans): move table plans onto app_permissions`
     Files: every other file in `.claude/plans/backend/` that changed (T3C-B5 to T3C-B33, T3C-S31)
     Body: renumbers their migrations by one (they now start at `0005`) and replaces `is_admin()` policies with `has_permission()` policies plus their own `app_permissions` rows.
+
+Phase 3 (new commits on the same branch; commits 1-11 already exist):
+
+12. `feat(db): let a Super Admin update users`
+    Files: `supabase/migrations/0005_user_admin.sql`, `src/types/database.types.ts`
+13. `test(db): cover is_super_admin and admin_update_profile`
+    Files: `supabase/tests/database/user_admin.test.sql`
+14. `feat(web): add a Users page for Super Admins`
+    Files: `src/types/db.ts`, `src/features/users/roles.ts`, `src/features/users/api.ts`, `src/providers/accessControlProvider.ts`, `src/providers/authProvider.ts`, `src/providers/authProvider.test.ts`, `src/pages/users/UserList.tsx`, `src/pages/users/UserEdit.tsx`, `src/App.tsx`
+    Body: the identity gains `roleId`, so the existing auth provider test moves with the code to keep every commit green.
+15. `test(web): cover the users api and access control`
+    Files: `src/features/users/api.test.ts`, `src/providers/accessControlProvider.test.ts`
+16. `test(e2e): cover the Users page`
+    Files: `e2e/users.spec.ts`
+17. `docs: add architecture 0002 user management`
+    Files: `docs/architecture/0002-User-Management.md`, `docs/architecture/0001-Role-Based-Access.md`, `README.md`
+18. `docs(plans): add T3C-B0 phase 3`
+    Files: `.claude/plans/backend/T3C-B0-Users-Table.md`
+19. `docs(plans): move table plans onto 0006`
+    Files: every other file in `.claude/plans/backend/` that changed (T3C-B5 to T3C-B33, T3C-S31)
+    Body: renumbers their migrations by one (they now start at `0006`), as Phase 3 requires. The commit list above had no commit for them.
+    Files: `.claude/plans/backend/T3C-B0-Users-Table.md`
+20. `docs(plans): renumber table plans after user admin`
+    Files: every other file in `.claude/plans/backend/` that changed (T3C-B5 to T3C-B33, T3C-S31)
+    Body: their migrations move up by one (they now start at `0006`), and the companies plan's anchors in `App.tsx`, `README.md` and `seed.test.sql` follow the new state.
 
 PR title: `feat(db): add roles and link profiles to them` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.
