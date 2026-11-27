@@ -17,6 +17,8 @@ import {
   LinkOutlined,
   TagsOutlined,
   ClockCircleOutlined,
+  EnvironmentOutlined,
+  ToolOutlined,
 } from '@ant-design/icons'
 import { ConfigProvider, theme } from 'antd'
 import { Navigate, Outlet, Route, Routes } from 'react-router'
@@ -48,6 +50,12 @@ import { CleaningTypeEdit } from '@/pages/cleaning-types/CleaningTypeEdit'
 import { CleaningStatusList } from '@/pages/cleaning-statuses/CleaningStatusList'
 import { CleaningStatusCreate } from '@/pages/cleaning-statuses/CleaningStatusCreate'
 import { CleaningStatusEdit } from '@/pages/cleaning-statuses/CleaningStatusEdit'
+import { AreaList } from '@/pages/areas/AreaList'
+import { AreaCreate } from '@/pages/areas/AreaCreate'
+import { AreaEdit } from '@/pages/areas/AreaEdit'
+import { ItemList } from '@/pages/items/ItemList'
+import { ItemCreate } from '@/pages/items/ItemCreate'
+import { ItemEdit } from '@/pages/items/ItemEdit'
 import { UserList } from '@/pages/users/UserList'
 import { UserEdit } from '@/pages/users/UserEdit'
 
@@ -118,6 +126,20 @@ const resources: ResourceProps[] = [
     create: '/cleaning-statuses/create',
     edit: '/cleaning-statuses/edit/:id',
     meta: { label: 'Cleaning statuses', icon: <ClockCircleOutlined /> },
+  },
+  {
+    name: 'areas',
+    list: '/areas',
+    create: '/areas/create',
+    edit: '/areas/edit/:id',
+    meta: { label: 'Areas', icon: <EnvironmentOutlined /> },
+  },
+  {
+    name: 'items',
+    list: '/items',
+    create: '/items/create',
+    edit: '/items/edit/:id',
+    meta: { label: 'Items', icon: <ToolOutlined /> },
   },
 ]
 
@@ -191,6 +213,16 @@ export default function App() {
               <Route index element={<CleaningStatusList />} />
               <Route path="create" element={<CleaningStatusCreate />} />
               <Route path="edit/:id" element={<CleaningStatusEdit />} />
+            </Route>
+            <Route path="/areas">
+              <Route index element={<AreaList />} />
+              <Route path="create" element={<AreaCreate />} />
+              <Route path="edit/:id" element={<AreaEdit />} />
+            </Route>
+            <Route path="/items">
+              <Route index element={<ItemList />} />
+              <Route path="create" element={<ItemCreate />} />
+              <Route path="edit/:id" element={<ItemEdit />} />
             </Route>
             <Route
               path="/users"

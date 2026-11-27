@@ -21,5 +21,7 @@ export type CompanyCleaner = Tables<'company_cleaners'>
 export type CleanerCompanyLink = CompanyCleaner & { companies: { name: string } | null }
 export type CleaningType = Tables<'cleaning_types'>
 export type CleaningStatus = Tables<'cleaning_statuses'>
+export type Area = Tables<'areas'>
+export type Item = Tables<'items'>
 export type CleanerWithCompanies = Cleaner & { company_cleaners: CleanerCompanyLink[] }
 export type TodoStats = PublicSchema['Functions']['todo_stats']['Returns'][number]
