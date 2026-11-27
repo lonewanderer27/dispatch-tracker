@@ -133,3 +133,11 @@ insert into public.cleaning_types (name) values
   ('1500+ Square Feet'),
   ('Diamond Cleaning')
 on conflict (name) do nothing;
+
+-- Reference data: job statuses, in life-cycle order. Fixed ids: cleaning_jobs defaults to Booked.
+insert into public.cleaning_statuses (id, name) values
+  ('10000000-0000-0000-0000-000000000001', 'Booked'),
+  ('10000000-0000-0000-0000-000000000002', 'Confirmed'),
+  ('10000000-0000-0000-0000-000000000003', 'In Progress'),
+  ('10000000-0000-0000-0000-000000000004', 'Done')
+on conflict do nothing;
