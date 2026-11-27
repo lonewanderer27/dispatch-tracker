@@ -14,6 +14,7 @@ const LOOKUPS: FilterLookups = {
     ['c-1', 'Xavier'],
     ['c-2', 'Yara'],
   ]),
+  cleaningStatuses: new Map([['s-1', 'Booked']]),
   cleaningTypes: new Map([['t-1', 'Deep clean']]),
 }
 
@@ -30,6 +31,7 @@ describe('buildFilterChips', () => {
         feedbackSearch: '  late  ',
         cleanerIds: ['cl-1'],
         companyIds: ['co-1'],
+        cleaningStatusIds: ['s-1'],
         clientIds: ['c-1', 'c-2'],
         cleaningTypeIds: ['t-1'],
         ratings: [4, 1],
@@ -41,6 +43,7 @@ describe('buildFilterChips', () => {
       'Feedback: "late"',
       'Cleaner: Ana Cruz',
       'Company: Acme',
+      'Status: Booked',
       'Client: Xavier',
       'Client: Yara',
       'Cleaning type: Deep clean',
@@ -87,11 +90,12 @@ describe('countPanelFilters', () => {
       countPanelFilters({
         ...EMPTY_FILTERS,
         clientIds: ['c-1', 'c-2'],
+        cleaningStatusIds: ['s-1', 's-2'],
         ratings: [3],
         dateRange: 'current_week',
         feedbackSearch: 'late',
       }),
-    ).toBe(2)
+    ).toBe(3)
   })
 })
 

@@ -8,6 +8,10 @@ const rowsByResource: Record<string, { id: string; [key: string]: string }[]> = 
   cleaners: [{ id: 'k1', first_name: 'Zed', middle_name: '', last_name: 'Adams' }],
   companies: [{ id: 'co1', name: 'The Tidy Team' }],
   clients: [{ id: 'c1', name: 'Xavier Ashby' }],
+  cleaning_statuses: [
+    { id: 's1', name: 'Done' },
+    { id: 's2', name: 'Booked' },
+  ],
   cleaning_types: [{ id: 't1', name: 'Deep' }],
 }
 
@@ -83,6 +87,7 @@ describe('CleaningJobFilterBar', () => {
     expect(screen.getByText('Any company')).toBeInTheDocument()
     expect(screen.getByText('Any client')).toBeInTheDocument()
     expect(screen.getByText('Any cleaning type')).toBeInTheDocument()
+    expect(screen.getByText('Any status')).toBeInTheDocument()
     expect(screen.getByText('Any rating')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /hide filters/i }))
     expect(screen.queryByText('Any cleaner')).not.toBeInTheDocument()
@@ -99,6 +104,13 @@ describe('CleaningJobFilterBar', () => {
     expect(screen.getByText('Rating: 4 stars')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Remove Client: Xavier Ashby' }))
     expect(onChange).toHaveBeenCalledWith({ ...EMPTY_FILTERS, ratings: [4] })
+  })
+
+  it('lists the statuses by name and tags the chosen one', async () => {
+    const onChange = setup({ ...EMPTY_FILTERS, cleaningStatusIds: ['s2'] })
+    expect(screen.getByText('Status: Booked')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Remove Status: Booked' }))
+    expect(onChange).toHaveBeenCalledWith(EMPTY_FILTERS)
   })
 
   it('clears every filter at once', async () => {

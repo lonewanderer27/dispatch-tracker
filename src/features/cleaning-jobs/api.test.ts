@@ -23,6 +23,7 @@ describe('fetchCleaningJobs', () => {
       p_company_ids: undefined,
       p_client_ids: undefined,
       p_cleaning_type_ids: undefined,
+      p_cleaning_status_ids: undefined,
       p_feedback_search: undefined,
       p_ratings: undefined,
       p_date_range: undefined,
@@ -48,6 +49,7 @@ describe('fetchCleaningJobs', () => {
           companyIds: ['co1'],
           clientIds: ['c1'],
           cleaningTypeIds: ['t1'],
+          cleaningStatusIds: ['s1'],
           feedbackSearch: ' oven ',
           ratings: [3, 4],
           dateRange: 'custom',
@@ -66,6 +68,7 @@ describe('fetchCleaningJobs', () => {
       p_company_ids: ['co1'],
       p_client_ids: ['c1'],
       p_cleaning_type_ids: ['t1'],
+      p_cleaning_status_ids: ['s1'],
       p_feedback_search: ' oven ',
       p_ratings: [3, 4],
       p_date_range: 'custom',
@@ -123,6 +126,7 @@ describe('hasActiveFilters', () => {
   it('is true when any filter is set', () => {
     expect(hasActiveFilters({ ...EMPTY_FILTERS, ratings: [5] })).toBe(true)
     expect(hasActiveFilters({ ...EMPTY_FILTERS, cleanerIds: ['k1'] })).toBe(true)
+    expect(hasActiveFilters({ ...EMPTY_FILTERS, cleaningStatusIds: ['s1'] })).toBe(true)
     expect(hasActiveFilters({ ...EMPTY_FILTERS, feedbackSearch: 'oven' })).toBe(true)
     expect(hasActiveFilters({ ...EMPTY_FILTERS, dateRange: 'current_week' })).toBe(true)
   })

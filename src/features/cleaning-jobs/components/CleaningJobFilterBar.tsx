@@ -30,7 +30,7 @@ import {
   countPanelFilters,
   ratingLabel,
 } from '@/features/cleaning-jobs/filterChips'
-import type { Cleaner, CleaningType, Client, Company } from '@/types/db'
+import type { Cleaner, CleaningStatus, CleaningType, Client, Company } from '@/types/db'
 
 interface Props {
   value: CleaningJobFilters
@@ -45,7 +45,7 @@ interface Option {
 /** One multi-select in the "Filters" panel. `key` builds the input id. */
 interface IdFilter {
   key: string
-  field: 'cleanerIds' | 'companyIds' | 'clientIds' | 'cleaningTypeIds'
+  field: 'cleanerIds' | 'companyIds' | 'cleaningStatusIds' | 'clientIds' | 'cleaningTypeIds'
   label: string
   placeholder: string
   options: Option[]
@@ -100,16 +100,22 @@ export function CleaningJobFilterBar({ value, onChange }: Props) {
     resource: 'cleaning_types',
     pagination: { mode: 'off' },
   })
+  const { result: statusRows } = useList<CleaningStatus>({
+    resource: 'cleaning_statuses',
+    pagination: { mode: 'off' },
+  })
   const cleaners = toOptions(cleanerRows.data, (c) =>
     [c.first_name, c.middle_name, c.last_name].filter(Boolean).join(' '),
   )
   const companies = toOptions(companyRows.data, (c) => c.name)
+  const cleaningStatuses = toOptions(statusRows.data, (s) => s.name)
   const clients = toOptions(clientRows.data, (c) => c.name)
   const cleaningTypes = toOptions(typeRows.data, (c) => c.name)
 
   const chips = buildFilterChips(value, {
     cleaners: toLookup(cleaners),
     companies: toLookup(companies),
+    cleaningStatuses: toLookup(cleaningStatuses),
     clients: toLookup(clients),
     cleaningTypes: toLookup(cleaningTypes),
   })
@@ -131,6 +137,13 @@ export function CleaningJobFilterBar({ value, onChange }: Props) {
       label: 'Company',
       placeholder: 'Any company',
       options: companies,
+    },
+    {
+      key: 'status',
+      field: 'cleaningStatusIds',
+      label: 'Status',
+      placeholder: 'Any status',
+      options: cleaningStatuses,
     },
     {
       key: 'client',
