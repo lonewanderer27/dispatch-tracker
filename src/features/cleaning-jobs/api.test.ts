@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { AppSupabaseClient } from '@/features/integration/api'
+import type { AppSupabaseClient } from '@/shared/supabase'
 import {
   DEFAULT_QUERY,
   EMPTY_FILTERS,

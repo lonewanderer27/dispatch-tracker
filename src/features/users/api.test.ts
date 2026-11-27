@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { AppSupabaseClient } from '@/features/integration/api'
+import type { AppSupabaseClient } from '@/shared/supabase'
 import { updateUserProfile } from '@/features/users/api'
 
 const input = {

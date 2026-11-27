@@ -12,7 +12,7 @@ import {
 
 const rpc = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 
-vi.mock('@/lib/supabase', () => ({
+vi.mock('@/shared/supabase', () => ({
   supabase: { rpc: (...args: unknown[]) => rpc(...args) },
 }))
 

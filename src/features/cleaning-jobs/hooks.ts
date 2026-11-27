@@ -8,7 +8,7 @@ import {
   fetchCompleteAddress,
   type CleaningJobQuery,
 } from '@/features/cleaning-jobs/api'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/shared/supabase'
 
 /** Cached results stay fresh for 30 seconds, then refresh in the background when used again. */
 const STALE_TIME_MS = 30_000

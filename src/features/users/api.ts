@@ -1,5 +1,5 @@
 // Data access for the Users page. Takes the client as an argument so tests can pass a mock.
-import type { AppSupabaseClient } from '@/features/integration/api'
+import type { AppSupabaseClient } from '@/shared/supabase'
 
 export interface UpdateUserInput {
   id: string
