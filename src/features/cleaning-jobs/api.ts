@@ -28,6 +28,7 @@ export interface CleaningJobFilters {
   companyIds: string[]
   clientIds: string[]
   cleaningTypeIds: string[]
+  cleaningStatusIds: string[]
   feedbackSearch: string
   ratings: number[]
   dateRange: DateRangeKey
@@ -49,6 +50,7 @@ export const EMPTY_FILTERS: CleaningJobFilters = {
   companyIds: [],
   clientIds: [],
   cleaningTypeIds: [],
+  cleaningStatusIds: [],
   feedbackSearch: '',
   ratings: [],
   dateRange: 'all',
@@ -71,6 +73,7 @@ export function hasActiveFilters(filters: CleaningJobFilters): boolean {
     filters.companyIds.length > 0 ||
     filters.clientIds.length > 0 ||
     filters.cleaningTypeIds.length > 0 ||
+    filters.cleaningStatusIds.length > 0 ||
     filters.feedbackSearch.trim() !== '' ||
     filters.ratings.length > 0 ||
     filters.dateRange !== 'all'
@@ -97,6 +100,8 @@ export async function fetchCleaningJobs(
     p_company_ids: filters.companyIds.length > 0 ? filters.companyIds : undefined,
     p_client_ids: filters.clientIds.length > 0 ? filters.clientIds : undefined,
     p_cleaning_type_ids: filters.cleaningTypeIds.length > 0 ? filters.cleaningTypeIds : undefined,
+    p_cleaning_status_ids:
+      filters.cleaningStatusIds.length > 0 ? filters.cleaningStatusIds : undefined,
     p_feedback_search: filters.feedbackSearch.trim() === '' ? undefined : filters.feedbackSearch,
     p_ratings: filters.ratings.length > 0 ? filters.ratings : undefined,
     p_date_range: filters.dateRange === 'all' ? undefined : filters.dateRange,

@@ -121,6 +121,31 @@ test.describe('Cleaning Jobs', () => {
     await expect(dataRows(page)).toHaveCount(10)
   })
 
+  test('filters by status and clears it', async ({ page }) => {
+    await signIn(page, 'user@example.com', 'user-password-123')
+    await openCleaningJobs(page)
+
+    await page.getByRole('button', { name: 'Filters' }).click()
+    const status = page.getByRole('combobox', { name: 'Status' })
+    await status.click()
+    await page
+      .locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')
+      .getByText('Done', { exact: true })
+      .click()
+    const filters = page.getByRole('group', { name: 'Active filters' })
+    await expect(filters.getByText('Status: Done')).toBeVisible()
+    // Every row that is left is Done (column 2 is Status, see the header test).
+    await expect(dataRows(page).first()).toBeVisible()
+    const rows = await dataRows(page).count()
+    for (let i = 0; i < rows; i++) {
+      await expect(dataRows(page).nth(i).locator('td').nth(2)).toHaveText('Done')
+    }
+
+    await filters.getByRole('button', { name: 'Clear all' }).click()
+    await expect(filters).toHaveCount(0)
+    await expect(dataRows(page)).toHaveCount(10)
+  })
+
   test('shows an empty state when nothing matches and a way back', async ({ page }) => {
     await signIn(page, 'user@example.com', 'user-password-123')
     await openCleaningJobs(page)

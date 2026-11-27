@@ -14,14 +14,17 @@ export interface FilterLookups {
   cleaners: ReadonlyMap<string, string>
   companies: ReadonlyMap<string, string>
   clients: ReadonlyMap<string, string>
+  cleaningStatuses: ReadonlyMap<string, string>
   cleaningTypes: ReadonlyMap<string, string>
 }
 
-type IdFilterKey = 'cleanerIds' | 'companyIds' | 'clientIds' | 'cleaningTypeIds'
+type IdFilterKey =
+  'cleanerIds' | 'companyIds' | 'cleaningStatusIds' | 'clientIds' | 'cleaningTypeIds'
 
 const ID_FILTERS: { field: IdFilterKey; title: string; lookup: keyof FilterLookups }[] = [
   { field: 'cleanerIds', title: 'Cleaner', lookup: 'cleaners' },
   { field: 'companyIds', title: 'Company', lookup: 'companies' },
+  { field: 'cleaningStatusIds', title: 'Status', lookup: 'cleaningStatuses' },
   { field: 'clientIds', title: 'Client', lookup: 'clients' },
   { field: 'cleaningTypeIds', title: 'Cleaning type', lookup: 'cleaningTypes' },
 ]
@@ -84,6 +87,7 @@ export function countPanelFilters(filters: CleaningJobFilters): number {
   return [
     filters.cleanerIds,
     filters.companyIds,
+    filters.cleaningStatusIds,
     filters.clientIds,
     filters.cleaningTypeIds,
     filters.ratings,
