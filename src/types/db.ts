@@ -10,6 +10,10 @@ export type TablesUpdate<T extends keyof PublicSchema['Tables']> =
 
 export type Todo = Tables<'todos'>
 export type Company = Tables<'companies'>
+export type Client = Tables<'clients'>
+export type Contact = Tables<'contacts'>
+export type ClientRow = Client & { companies: { name: string } | null }
+export type ContactRow = Contact & { clients: { name: string } | null }
 export type Profile = Tables<'profiles'>
 export type UserRow = Profile & { roles: { name: string } | null }
 export type TodoStats = PublicSchema['Functions']['todo_stats']['Returns'][number]

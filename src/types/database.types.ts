@@ -43,6 +43,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"clients": {
+                  Row: {
+                    "company_id": string,"id": string,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "company_id": string,"id"?: string,"name": string
+                  }
+                  Update: {
+                    "company_id"?: string,"id"?: string,"name"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "clients_company_id_fkey"
+      columns: ["company_id"]
+isOneToOne: false
+      referencedRelation: "companies"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"companies": {
                   Row: {
                     "id": string,"name": string
@@ -56,6 +76,26 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"contacts": {
+                  Row: {
+                    "client_id": string,"contact_no": string,"first_name": string,"id": string,"last_name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id": string,"contact_no": string,"first_name": string,"id"?: string,"last_name": string
+                  }
+                  Update: {
+                    "client_id"?: string,"contact_no"?: string,"first_name"?: string,"id"?: string,"last_name"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "contacts_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"profiles": {
                   Row: {

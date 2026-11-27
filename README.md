@@ -63,7 +63,9 @@ supabase/
   migrations/0004_app_permissions.sql  Super Admin role, app_permissions, has_permission()
   migrations/0005_user_admin.sql  is_super_admin(), admin_update_profile()
   migrations/0006_companies.sql  companies (brands), role-based RLS
-  seed.sql                     local test users, todos and the four companies
+  migrations/0007_clients.sql  clients (each booked against a company), role-based RLS
+  migrations/0008_contacts.sql contacts (name and number per client), role-based RLS
+  seed.sql                     local test users, todos, the four companies, and client/contact scenarios
   functions/exchange-rate/     edge function + Deno tests
   tests/database/              pgTAP tests
 src/
@@ -72,7 +74,7 @@ src/
   providers/                   Refine data/live provider, auth provider
   features/integration/        data access + hooks for dashboard checks
   features/users/              role ids and the Super Admin user update call
-  pages/dashboard, pages/todos, pages/users, pages/companies
+  pages/dashboard, pages/todos, pages/users, pages/companies, pages/clients, pages/contacts
 e2e/                           Playwright specs and the Frankfurter stub
 ```
 

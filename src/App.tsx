@@ -11,6 +11,8 @@ import {
   CheckSquareOutlined,
   TeamOutlined,
   ShopOutlined,
+  SolutionOutlined,
+  PhoneOutlined,
 } from '@ant-design/icons'
 import { ConfigProvider, theme } from 'antd'
 import { Navigate, Outlet, Route, Routes } from 'react-router'
@@ -25,6 +27,12 @@ import { TodoShow } from '@/pages/todos/TodoShow'
 import { CompanyList } from '@/pages/companies/CompanyList'
 import { CompanyCreate } from '@/pages/companies/CompanyCreate'
 import { CompanyEdit } from '@/pages/companies/CompanyEdit'
+import { ClientList } from '@/pages/clients/ClientList'
+import { ClientCreate } from '@/pages/clients/ClientCreate'
+import { ClientEdit } from '@/pages/clients/ClientEdit'
+import { ContactList } from '@/pages/contacts/ContactList'
+import { ContactCreate } from '@/pages/contacts/ContactCreate'
+import { ContactEdit } from '@/pages/contacts/ContactEdit'
 import { UserList } from '@/pages/users/UserList'
 import { UserEdit } from '@/pages/users/UserEdit'
 
@@ -54,6 +62,20 @@ const resources: ResourceProps[] = [
     create: '/companies/create',
     edit: '/companies/edit/:id',
     meta: { label: 'Companies', icon: <ShopOutlined /> },
+  },
+  {
+    name: 'clients',
+    list: '/clients',
+    create: '/clients/create',
+    edit: '/clients/edit/:id',
+    meta: { label: 'Clients', icon: <SolutionOutlined /> },
+  },
+  {
+    name: 'contacts',
+    list: '/contacts',
+    create: '/contacts/create',
+    edit: '/contacts/edit/:id',
+    meta: { label: 'Contacts', icon: <PhoneOutlined /> },
   },
 ]
 
@@ -98,6 +120,16 @@ export default function App() {
               <Route index element={<CompanyList />} />
               <Route path="create" element={<CompanyCreate />} />
               <Route path="edit/:id" element={<CompanyEdit />} />
+            </Route>
+            <Route path="/clients">
+              <Route index element={<ClientList />} />
+              <Route path="create" element={<ClientCreate />} />
+              <Route path="edit/:id" element={<ClientEdit />} />
+            </Route>
+            <Route path="/contacts">
+              <Route index element={<ContactList />} />
+              <Route path="create" element={<ContactCreate />} />
+              <Route path="edit/:id" element={<ContactEdit />} />
             </Route>
             <Route
               path="/users"

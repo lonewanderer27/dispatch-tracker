@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { SUPER_ADMIN_ROLE_ID, USER_ROLE_ID } from '@/features/users/roles'
+import { ADMIN_ROLE_ID, SUPER_ADMIN_ROLE_ID, USER_ROLE_ID } from '@/features/users/roles'
 
 const getIdentity = vi.fn<() => Promise<{ id: string; roleId: string } | null>>()
 
@@ -30,5 +30,30 @@ describe('accessControlProvider', () => {
     getIdentity.mockResolvedValue(null)
     const signedOut = await accessControlProvider.can({ resource: 'profiles', action: 'list' })
     expect(signedOut.can).toBe(false)
+  })
+
+  it.each(['clients', 'contacts'])(
+    'lets a User read %s without asking who they are',
+    async (resource) => {
+      getIdentity.mockClear()
+      const res = await accessControlProvider.can({ resource, action: 'list' })
+      expect(res).toEqual({ can: true })
+      expect(getIdentity).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each(['clients', 'contacts'])('lets an Admin change %s', async (resource) => {
+    getIdentity.mockResolvedValue({ id: 'u3', roleId: ADMIN_ROLE_ID })
+    for (const action of ['create', 'edit', 'delete']) {
+      expect(await accessControlProvider.can({ resource, action })).toEqual({ can: true })
+    }
+  })
+
+  it.each(['clients', 'contacts'])('denies a User changing %s', async (resource) => {
+    getIdentity.mockResolvedValue({ id: 'u2', roleId: USER_ROLE_ID })
+    for (const action of ['create', 'edit', 'delete']) {
+      const res = await accessControlProvider.can({ resource, action })
+      expect(res.can).toBe(false)
+    }
   })
 })
