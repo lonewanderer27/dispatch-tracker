@@ -91,6 +91,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"cleaning_job_areas": {
+                  Row: {
+                    "area_id": string,"cleaning_job_id": string,"description": string | null,"id": string,"priority": boolean
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "area_id": string,"cleaning_job_id": string,"description"?: string | null,"id"?: string,"priority"?: boolean
+                  }
+                  Update: {
+                    "area_id"?: string,"cleaning_job_id"?: string,"description"?: string | null,"id"?: string,"priority"?: boolean
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cleaning_job_areas_area_id_fkey"
+      columns: ["area_id"]
+isOneToOne: false
+      referencedRelation: "areas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cleaning_job_areas_cleaning_job_id_fkey"
+      columns: ["cleaning_job_id"]
+isOneToOne: false
+      referencedRelation: "cleaning_jobs"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"cleaning_job_assignments": {
                   Row: {
                     "cleaner_id": string,"cleaning_job_id": string,"id": string
@@ -140,6 +166,32 @@ isOneToOne: false
       columns: ["cleaning_type_id"]
 isOneToOne: false
       referencedRelation: "cleaning_types"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"cleaning_job_items": {
+                  Row: {
+                    "cleaning_job_id": string,"description": string | null,"id": string,"item_id": string,"priority": boolean
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cleaning_job_id": string,"description"?: string | null,"id"?: string,"item_id": string,"priority"?: boolean
+                  }
+                  Update: {
+                    "cleaning_job_id"?: string,"description"?: string | null,"id"?: string,"item_id"?: string,"priority"?: boolean
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cleaning_job_items_cleaning_job_id_fkey"
+      columns: ["cleaning_job_id"]
+isOneToOne: false
+      referencedRelation: "cleaning_jobs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cleaning_job_items_item_id_fkey"
+      columns: ["item_id"]
+isOneToOne: false
+      referencedRelation: "items"
       referencedColumns: ["id"]
     }
                   ]
