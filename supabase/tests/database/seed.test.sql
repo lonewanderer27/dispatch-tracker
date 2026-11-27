@@ -12,9 +12,10 @@ select is(
 );
 
 select is(
-  (select role from public.profiles where id = '11111111-1111-1111-1111-111111111111'),
-  'admin',
-  'seeded admin has role admin'
+  (select r.name from public.profiles p join public.roles r on r.id = p.role_id
+     where p.id = '11111111-1111-1111-1111-111111111111'),
+  'Admin',
+  'seeded admin has the Admin role'
 );
 
 select is(

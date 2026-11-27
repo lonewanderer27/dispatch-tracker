@@ -60,7 +60,7 @@ export const authProvider = {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('display_name, role')
+      .select('display_name, roles(name)')
       .eq('id', user.id)
       .maybeSingle()
 
@@ -69,7 +69,7 @@ export const authProvider = {
       id: user.id,
       email: user.email,
       name: displayName === '' ? user.email : displayName,
-      role: profile?.role ?? 'user',
+      role: profile?.roles.name ?? 'User',
     }
   },
 

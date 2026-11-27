@@ -25,14 +25,34 @@ export type Database = {
           Tables: {
             "profiles": {
                   Row: {
-                    "created_at": string,"display_name": string,"id": string,"role": string
+                    "created_at": string,"display_name": string,"id": string,"role_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"display_name"?: string,"id": string,"role"?: string
+                    "created_at"?: string,"display_name"?: string,"id": string,"role_id"?: string
                   }
                   Update: {
-                    "created_at"?: string,"display_name"?: string,"id"?: string,"role"?: string
+                    "created_at"?: string,"display_name"?: string,"id"?: string,"role_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "profiles_role_id_fkey"
+      columns: ["role_id"]
+isOneToOne: false
+      referencedRelation: "roles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"roles": {
+                  Row: {
+                    "id": string,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: string,"name": string
+                  }
+                  Update: {
+                    "id"?: string,"name"?: string
                   }
                   Relationships: [
                     

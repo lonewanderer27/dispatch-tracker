@@ -35,7 +35,7 @@ values
    '22222222-2222-2222-2222-222222222222', now(), now(), now());
 
 -- The trigger created both profiles. Promote the admin.
-update public.profiles set role = 'admin' where id = '11111111-1111-1111-1111-111111111111';
+update public.profiles set role_id = '30000000-0000-0000-0000-000000000001' where id = '11111111-1111-1111-1111-111111111111';
 
 insert into public.todos (user_id, title, done) values
   ('22222222-2222-2222-2222-222222222222', 'Buy milk', true),
