@@ -1,6 +1,9 @@
 import { test, expect, type Page } from '@playwright/test'
 
-// Local seed only (supabase/seed.sql).
+// Local seed only (supabase/seeds/). The seed has hundreds of clients, so list checks open the
+// clients list with a page size large enough to hold them all.
+const ALL_CLIENTS = '/clients?current=1&pageSize=1000'
+
 async function signIn(page: Page, email: string, password: string) {
   await page.goto('/login')
   await page.getByLabel('Email').fill(email)
@@ -20,7 +23,10 @@ async function confirmDelete(page: Page) {
 }
 
 async function pickOption(page: Page, field: string, option: string) {
-  await page.getByRole('combobox', { name: field }).click()
+  const combobox = page.getByRole('combobox', { name: field })
+  await combobox.click()
+  // Lists with many rows (the seed has hundreds of clients) only load ten options, so search first.
+  await combobox.fill(option)
   await page
     .locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')
     .getByText(option, { exact: true })
@@ -35,6 +41,7 @@ test.describe('as a normal user', () => {
     await signIn(page, 'user@example.com', 'user-password-123')
 
     await page.getByRole('link', { name: 'Clients' }).click()
+    await page.goto(ALL_CLIENTS)
     await expect(page.getByRole('cell', { name: 'Sam Newbie', exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: /create/i })).toBeDisabled()
 
@@ -61,6 +68,7 @@ test.describe('as an admin', () => {
     await pickOption(page, 'Company', 'The Tidy Team')
     await textField(page, 'Name').fill(client)
     await page.getByRole('button', { name: /save/i }).click()
+    await page.goto(ALL_CLIENTS)
     await expect(page.getByRole('cell', { name: client, exact: true })).toBeVisible()
 
     await page.getByRole('row', { name: client }).getByRole('button', { name: 'edit' }).click()
@@ -68,6 +76,7 @@ test.describe('as an admin', () => {
     await expect(textField(page, 'Name')).toHaveValue(client)
     await textField(page, 'Name').fill(edited)
     await page.getByRole('button', { name: /save/i }).click()
+    await page.goto(ALL_CLIENTS)
     await expect(page.getByRole('cell', { name: edited, exact: true })).toBeVisible()
 
     // Contact: create for the client, check the number is kept as entered, then edit it.
@@ -102,7 +111,7 @@ test.describe('as an admin', () => {
     await confirmDelete(page)
     await expect(page.getByRole('cell', { name: `Test ${lastEdited}` })).toHaveCount(0)
 
-    await page.goto('/clients')
+    await page.goto(ALL_CLIENTS)
     await page.getByRole('row', { name: edited }).getByRole('button', { name: 'delete' }).click()
     await confirmDelete(page)
     await expect(page.getByRole('cell', { name: edited, exact: true })).toHaveCount(0)
