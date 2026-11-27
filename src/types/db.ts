@@ -19,5 +19,7 @@ export type UserRow = Profile & { roles: { name: string } | null }
 export type Cleaner = Tables<'cleaners'>
 export type CompanyCleaner = Tables<'company_cleaners'>
 export type CleanerCompanyLink = CompanyCleaner & { companies: { name: string } | null }
+export type CleaningType = Tables<'cleaning_types'>
+export type CleaningStatus = Tables<'cleaning_statuses'>
 export type CleanerWithCompanies = Cleaner & { company_cleaners: CleanerCompanyLink[] }
 export type TodoStats = PublicSchema['Functions']['todo_stats']['Returns'][number]

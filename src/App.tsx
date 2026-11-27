@@ -15,6 +15,8 @@ import {
   PhoneOutlined,
   UserOutlined,
   LinkOutlined,
+  TagsOutlined,
+  ClockCircleOutlined,
 } from '@ant-design/icons'
 import { ConfigProvider, theme } from 'antd'
 import { Navigate, Outlet, Route, Routes } from 'react-router'
@@ -40,6 +42,12 @@ import { CleanerCreate } from '@/pages/cleaners/CleanerCreate'
 import { CleanerEdit } from '@/pages/cleaners/CleanerEdit'
 import { CompanyCleanerList } from '@/pages/company-cleaners/CompanyCleanerList'
 import { CompanyCleanerCreate } from '@/pages/company-cleaners/CompanyCleanerCreate'
+import { CleaningTypeList } from '@/pages/cleaning-types/CleaningTypeList'
+import { CleaningTypeCreate } from '@/pages/cleaning-types/CleaningTypeCreate'
+import { CleaningTypeEdit } from '@/pages/cleaning-types/CleaningTypeEdit'
+import { CleaningStatusList } from '@/pages/cleaning-statuses/CleaningStatusList'
+import { CleaningStatusCreate } from '@/pages/cleaning-statuses/CleaningStatusCreate'
+import { CleaningStatusEdit } from '@/pages/cleaning-statuses/CleaningStatusEdit'
 import { UserList } from '@/pages/users/UserList'
 import { UserEdit } from '@/pages/users/UserEdit'
 
@@ -96,6 +104,20 @@ const resources: ResourceProps[] = [
     list: '/company-cleaners',
     create: '/company-cleaners/create',
     meta: { label: 'Company cleaners', icon: <LinkOutlined /> },
+  },
+  {
+    name: 'cleaning_types',
+    list: '/cleaning-types',
+    create: '/cleaning-types/create',
+    edit: '/cleaning-types/edit/:id',
+    meta: { label: 'Cleaning types', icon: <TagsOutlined /> },
+  },
+  {
+    name: 'cleaning_statuses',
+    list: '/cleaning-statuses',
+    create: '/cleaning-statuses/create',
+    edit: '/cleaning-statuses/edit/:id',
+    meta: { label: 'Cleaning statuses', icon: <ClockCircleOutlined /> },
   },
 ]
 
@@ -159,6 +181,16 @@ export default function App() {
             <Route path="/company-cleaners">
               <Route index element={<CompanyCleanerList />} />
               <Route path="create" element={<CompanyCleanerCreate />} />
+            </Route>
+            <Route path="/cleaning-types">
+              <Route index element={<CleaningTypeList />} />
+              <Route path="create" element={<CleaningTypeCreate />} />
+              <Route path="edit/:id" element={<CleaningTypeEdit />} />
+            </Route>
+            <Route path="/cleaning-statuses">
+              <Route index element={<CleaningStatusList />} />
+              <Route path="create" element={<CleaningStatusCreate />} />
+              <Route path="edit/:id" element={<CleaningStatusEdit />} />
             </Route>
             <Route
               path="/users"
