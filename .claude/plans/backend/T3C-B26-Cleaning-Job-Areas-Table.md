@@ -12,8 +12,8 @@ Source: sprint sheet `The Tidy Team - Digital Platforms Sprint - Sprint 2_ Nov-2
 
 ## Facts (verified 2026-11-27)
 
-1. Branch is `main`. Migrations are numbered `NNNN_name.sql`. This plan adds `supabase/migrations/0021_cleaning_job_areas.sql`, so migrations up to `0020` must already exist. Plans are applied in migration order: roles is `0003` and app_permissions is `0004` (T3C-B0), companies is `0005` (`.claude/plans/backend/T3C-B7-S8-Companies-Table.md`).
-2. Required earlier migrations (plan that creates each): `0003_roles.sql` and `0004_app_permissions.sql` (T3C-B0); `0012_cleaning_jobs.sql` (T3C-B15); `0019_areas.sql` (T3C-B22). If any is missing, **stop and report**.
+1. Branch is `main`. Migrations are numbered `NNNN_name.sql`. This plan adds `supabase/migrations/0022_cleaning_job_areas.sql`, so migrations up to `0021` must already exist. Plans are applied in migration order: roles is `0003`, app_permissions is `0004` and user admin is `0005` (T3C-B0), companies is `0006` (`.claude/plans/backend/T3C-B7-S8-Companies-Table.md`).
+2. Required earlier migrations (plan that creates each): `0003_roles.sql` and `0004_app_permissions.sql` (T3C-B0); `0013_cleaning_jobs.sql` (T3C-B15); `0020_areas.sql` (T3C-B22). If any is missing, **stop and report**.
 3. Table `public.cleaning_job_areas` does not exist yet, and `src/types/database.types.ts` has no `cleaning_job_areas` entry. That file is generated; never hand-edit it.
 4. Roles come from T3C-B0 (`.claude/plans/backend/T3C-B0-Users-Table.md`): `supabase/migrations/0003_roles.sql` creates `public.roles` (Admin id `30000000-0000-0000-0000-000000000001`, User id `30000000-0000-0000-0000-000000000002`) and replaces `profiles.role` with `profiles.role_id`. `public.is_admin()` is true when the caller's profile has the Admin role id. Policies of this table do not use it; they call `(select public.has_permission('<table>', '<action>'))`, which needs `0004_app_permissions.sql` (T3C-B0 phase 2: Super Admin role id `30000000-0000-0000-0000-000000000003`, `public.app_permissions`, `public.has_permission`). If `0004_app_permissions.sql` is missing, **stop and report**. If `0003_roles.sql` is missing, **stop and report**.
 5. Table pattern (`0001_init.sql`): `id uuid primary key default gen_random_uuid()`, `enable row level security`, `revoke all ... from anon, authenticated`, explicit `grant ... to authenticated`, then policies.
@@ -50,14 +50,14 @@ git status --short && git switch -c feat/T3C-B26-Cleaning-Job-Areas-Table && pnp
 ```
 
 **Gate:** `git branch --show-current && ls supabase/migrations`
-**Expect:** `feat/T3C-B26-Cleaning-Job-Areas-Table`, then a migration list that ends at `0020_items.sql` (the file just before this plan's `0021`). If `git status --short` printed anything before the switch, or the list is different, stop and report.
+**Expect:** `feat/T3C-B26-Cleaning-Job-Areas-Table`, then a migration list that ends at `0021_items.sql` (the file just before this plan's `0022`). If `git status --short` printed anything before the switch, or the list is different, stop and report.
 
 ### Step 1. Migration (create file)
 
-Create `supabase/migrations/0021_cleaning_job_areas.sql` with exactly this content:
+Create `supabase/migrations/0022_cleaning_job_areas.sql` with exactly this content:
 
 ```sql
--- 0021_cleaning_job_areas: the areas included in a job, with a priority flag.
+-- 0022_cleaning_job_areas: the areas included in a job, with a priority flag.
 
 create table public.cleaning_job_areas (
   id              uuid primary key default gen_random_uuid(),
@@ -252,7 +252,7 @@ rollback;
 pnpm db:reset && grep -c "cleaning_job_areas" src/types/database.types.ts
 ```
 
-**Expect:** `db:reset` exits 0 with no SQL error and applies `0021_cleaning_job_areas.sql`; the `grep` prints a number greater than `0`.
+**Expect:** `db:reset` exits 0 with no SQL error and applies `0022_cleaning_job_areas.sql`; the `grep` prints a number greater than `0`.
 
 ```bash
 pnpm test:db
@@ -270,12 +270,12 @@ pnpm typecheck && pnpm lint
 git status --short
 ```
 
-**Expect:** only `supabase/migrations/0021_cleaning_job_areas.sql`, `supabase/tests/database/cleaning_job_areas.test.sql`, `src/types/database.types.ts` and this plan file. Anything else: stop and report.
+**Expect:** only `supabase/migrations/0022_cleaning_job_areas.sql`, `supabase/tests/database/cleaning_job_areas.test.sql`, `src/types/database.types.ts` and this plan file. Anything else: stop and report.
 
 ## Rollback
 
 - Before commit: `git switch main && git branch -D feat/T3C-B26-Cleaning-Job-Areas-Table`, then `pnpm db:reset`.
-- After merge, if a hosted DB already has `0021_cleaning_job_areas.sql`: add `0121_drop_cleaning_job_areas.sql` containing `delete from public.app_permissions where resource = 'cleaning_job_areas';` and `drop table public.cleaning_job_areas;`. Never edit or delete an applied migration. Stop and ask first if other tables already reference `cleaning_job_areas`.
+- After merge, if a hosted DB already has `0022_cleaning_job_areas.sql`: add `0122_drop_cleaning_job_areas.sql` containing `delete from public.app_permissions where resource = 'cleaning_job_areas';` and `drop table public.cleaning_job_areas;`. Never edit or delete an applied migration. Stop and ask first if other tables already reference `cleaning_job_areas`.
 
 ## Conventional commits
 
@@ -288,7 +288,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 ```
 
 1. `feat(db): add cleaning_job_areas table with role-based RLS`
-   Files: `supabase/migrations/0021_cleaning_job_areas.sql`, `src/types/database.types.ts`
+   Files: `supabase/migrations/0022_cleaning_job_areas.sql`, `src/types/database.types.ts`
 2. `test(db): cover cleaning_job_areas constraints and access`
    Files: `supabase/tests/database/cleaning_job_areas.test.sql`
 3. `docs(plans): add T3C-B26 plan`

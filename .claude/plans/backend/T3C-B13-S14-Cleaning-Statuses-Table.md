@@ -15,7 +15,7 @@ Source: sprint sheet `The Tidy Team - Digital Platforms Sprint - Sprint 2_ Nov-2
 
 ## Facts (verified 2026-11-27)
 
-1. Branch is `main`. Migrations are numbered `NNNN_name.sql`. This plan adds `supabase/migrations/0011_cleaning_statuses.sql`, so migrations up to `0010` must already exist. Plans are applied in migration order: roles is `0003` and app_permissions is `0004` (T3C-B0), companies is `0005` (`.claude/plans/backend/T3C-B7-S8-Companies-Table.md`).
+1. Branch is `main`. Migrations are numbered `NNNN_name.sql`. This plan adds `supabase/migrations/0012_cleaning_statuses.sql`, so migrations up to `0011` must already exist. Plans are applied in migration order: roles is `0003`, app_permissions is `0004` and user admin is `0005` (T3C-B0), companies is `0006` (`.claude/plans/backend/T3C-B7-S8-Companies-Table.md`).
 2. Required earlier migrations (plan that creates each): `0003_roles.sql` (T3C-B0). If any is missing, **stop and report**.
 3. Table `public.cleaning_statuses` does not exist yet, and `src/types/database.types.ts` has no `cleaning_statuses` entry. That file is generated; never hand-edit it.
 4. Roles come from T3C-B0 (`.claude/plans/backend/T3C-B0-Users-Table.md`): `supabase/migrations/0003_roles.sql` creates `public.roles` (Admin id `30000000-0000-0000-0000-000000000001`, User id `30000000-0000-0000-0000-000000000002`) and replaces `profiles.role` with `profiles.role_id`. `public.is_admin()` is true when the caller's profile has the Admin role id. Policies of this table do not use it; they call `(select public.has_permission('<table>', '<action>'))`, which needs `0004_app_permissions.sql` (T3C-B0 phase 2: Super Admin role id `30000000-0000-0000-0000-000000000003`, `public.app_permissions`, `public.has_permission`). If `0004_app_permissions.sql` is missing, **stop and report**. If `0003_roles.sql` is missing, **stop and report**.
@@ -56,14 +56,14 @@ git status --short && git switch -c feat/T3C-B13-S14-Cleaning-Statuses-Table && 
 ```
 
 **Gate:** `git branch --show-current && ls supabase/migrations`
-**Expect:** `feat/T3C-B13-S14-Cleaning-Statuses-Table`, then a migration list that ends at `0010_cleaning_types.sql` (the file just before this plan's `0011`). If `git status --short` printed anything before the switch, or the list is different, stop and report.
+**Expect:** `feat/T3C-B13-S14-Cleaning-Statuses-Table`, then a migration list that ends at `0011_cleaning_types.sql` (the file just before this plan's `0012`). If `git status --short` printed anything before the switch, or the list is different, stop and report.
 
 ### Step 1. Migration (create file)
 
-Create `supabase/migrations/0011_cleaning_statuses.sql` with exactly this content:
+Create `supabase/migrations/0012_cleaning_statuses.sql` with exactly this content:
 
 ```sql
--- 0011_cleaning_statuses: the life-cycle statuses of a job.
+-- 0012_cleaning_statuses: the life-cycle statuses of a job.
 
 create table public.cleaning_statuses (
   id   uuid primary key default gen_random_uuid(),
@@ -252,7 +252,7 @@ rollback;
 pnpm db:reset && grep -c "cleaning_statuses" src/types/database.types.ts
 ```
 
-**Expect:** `db:reset` exits 0 with no SQL error and applies `0011_cleaning_statuses.sql`; the `grep` prints a number greater than `0`.
+**Expect:** `db:reset` exits 0 with no SQL error and applies `0012_cleaning_statuses.sql`; the `grep` prints a number greater than `0`.
 
 ```bash
 pnpm test:db
@@ -270,12 +270,12 @@ pnpm typecheck && pnpm lint
 git status --short
 ```
 
-**Expect:** only `supabase/migrations/0011_cleaning_statuses.sql`, `supabase/seed.sql`, `supabase/tests/database/cleaning_statuses.test.sql`, `src/types/database.types.ts` and this plan file. Anything else: stop and report.
+**Expect:** only `supabase/migrations/0012_cleaning_statuses.sql`, `supabase/seed.sql`, `supabase/tests/database/cleaning_statuses.test.sql`, `src/types/database.types.ts` and this plan file. Anything else: stop and report.
 
 ## Rollback
 
 - Before commit: `git switch main && git branch -D feat/T3C-B13-S14-Cleaning-Statuses-Table`, then `pnpm db:reset`.
-- After merge, if a hosted DB already has `0011_cleaning_statuses.sql`: add `0111_drop_cleaning_statuses.sql` containing `delete from public.app_permissions where resource = 'cleaning_statuses';` and `drop table public.cleaning_statuses;`. Never edit or delete an applied migration. Stop and ask first if other tables already reference `cleaning_statuses`.
+- After merge, if a hosted DB already has `0012_cleaning_statuses.sql`: add `0112_drop_cleaning_statuses.sql` containing `delete from public.app_permissions where resource = 'cleaning_statuses';` and `drop table public.cleaning_statuses;`. Never edit or delete an applied migration. Stop and ask first if other tables already reference `cleaning_statuses`.
 
 ## Conventional commits
 
@@ -288,7 +288,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 ```
 
 1. `feat(db): add cleaning_statuses table with role-based RLS`
-   Files: `supabase/migrations/0011_cleaning_statuses.sql`, `src/types/database.types.ts`
+   Files: `supabase/migrations/0012_cleaning_statuses.sql`, `src/types/database.types.ts`
 2. `feat(db): seed the four job statuses`
    Files: `supabase/seed.sql`
 3. `test(db): cover cleaning_statuses constraints and access`

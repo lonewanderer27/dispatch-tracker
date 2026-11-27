@@ -12,7 +12,7 @@ Source: sprint sheet `The Tidy Team - Digital Platforms Sprint - Sprint 2_ Nov-2
 
 ## Facts (verified 2026-11-27)
 
-1. Branch is `main`. Migrations are numbered `NNNN_name.sql`. This plan adds `supabase/migrations/0019_areas.sql`, so migrations up to `0018` must already exist. Plans are applied in migration order: roles is `0003` and app_permissions is `0004` (T3C-B0), companies is `0005` (`.claude/plans/backend/T3C-B7-S8-Companies-Table.md`).
+1. Branch is `main`. Migrations are numbered `NNNN_name.sql`. This plan adds `supabase/migrations/0020_areas.sql`, so migrations up to `0019` must already exist. Plans are applied in migration order: roles is `0003`, app_permissions is `0004` and user admin is `0005` (T3C-B0), companies is `0006` (`.claude/plans/backend/T3C-B7-S8-Companies-Table.md`).
 2. Required earlier migrations (plan that creates each): `0003_roles.sql` (T3C-B0). If any is missing, **stop and report**.
 3. Table `public.areas` does not exist yet, and `src/types/database.types.ts` has no `areas` entry. That file is generated; never hand-edit it.
 4. Roles come from T3C-B0 (`.claude/plans/backend/T3C-B0-Users-Table.md`): `supabase/migrations/0003_roles.sql` creates `public.roles` (Admin id `30000000-0000-0000-0000-000000000001`, User id `30000000-0000-0000-0000-000000000002`) and replaces `profiles.role` with `profiles.role_id`. `public.is_admin()` is true when the caller's profile has the Admin role id. Policies of this table do not use it; they call `(select public.has_permission('<table>', '<action>'))`, which needs `0004_app_permissions.sql` (T3C-B0 phase 2: Super Admin role id `30000000-0000-0000-0000-000000000003`, `public.app_permissions`, `public.has_permission`). If `0004_app_permissions.sql` is missing, **stop and report**. If `0003_roles.sql` is missing, **stop and report**.
@@ -51,14 +51,14 @@ git status --short && git switch -c feat/T3C-B22-Areas-Table && pnpm db:start
 ```
 
 **Gate:** `git branch --show-current && ls supabase/migrations`
-**Expect:** `feat/T3C-B22-Areas-Table`, then a migration list that ends at `0018_properties.sql` (the file just before this plan's `0019`). If `git status --short` printed anything before the switch, or the list is different, stop and report.
+**Expect:** `feat/T3C-B22-Areas-Table`, then a migration list that ends at `0019_properties.sql` (the file just before this plan's `0020`). If `git status --short` printed anything before the switch, or the list is different, stop and report.
 
 ### Step 1. Migration (create file)
 
-Create `supabase/migrations/0019_areas.sql` with exactly this content:
+Create `supabase/migrations/0020_areas.sql` with exactly this content:
 
 ```sql
--- 0019_areas: lookup list of areas.
+-- 0020_areas: lookup list of areas.
 
 create table public.areas (
   id          uuid primary key default gen_random_uuid(),
@@ -218,7 +218,7 @@ rollback;
 pnpm db:reset && grep -c "areas" src/types/database.types.ts
 ```
 
-**Expect:** `db:reset` exits 0 with no SQL error and applies `0019_areas.sql`; the `grep` prints a number greater than `0`.
+**Expect:** `db:reset` exits 0 with no SQL error and applies `0020_areas.sql`; the `grep` prints a number greater than `0`.
 
 ```bash
 pnpm test:db
@@ -236,12 +236,12 @@ pnpm typecheck && pnpm lint
 git status --short
 ```
 
-**Expect:** only `supabase/migrations/0019_areas.sql`, `supabase/tests/database/areas.test.sql`, `src/types/database.types.ts` and this plan file. Anything else: stop and report.
+**Expect:** only `supabase/migrations/0020_areas.sql`, `supabase/tests/database/areas.test.sql`, `src/types/database.types.ts` and this plan file. Anything else: stop and report.
 
 ## Rollback
 
 - Before commit: `git switch main && git branch -D feat/T3C-B22-Areas-Table`, then `pnpm db:reset`.
-- After merge, if a hosted DB already has `0019_areas.sql`: add `0119_drop_areas.sql` containing `delete from public.app_permissions where resource = 'areas';` and `drop table public.areas;`. Never edit or delete an applied migration. Stop and ask first if other tables already reference `areas`.
+- After merge, if a hosted DB already has `0020_areas.sql`: add `0120_drop_areas.sql` containing `delete from public.app_permissions where resource = 'areas';` and `drop table public.areas;`. Never edit or delete an applied migration. Stop and ask first if other tables already reference `areas`.
 
 ## Conventional commits
 
@@ -254,7 +254,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 ```
 
 1. `feat(db): add areas table with role-based RLS`
-   Files: `supabase/migrations/0019_areas.sql`, `src/types/database.types.ts`
+   Files: `supabase/migrations/0020_areas.sql`, `src/types/database.types.ts`
 2. `test(db): cover areas constraints and access`
    Files: `supabase/tests/database/areas.test.sql`
 3. `docs(plans): add T3C-B22 plan`

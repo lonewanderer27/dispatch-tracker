@@ -13,19 +13,20 @@ Source: sprint sheet `The Tidy Team - Digital Platforms Sprint - Sprint 2_ Nov-2
 
 ## Facts (verified 2026-11-27)
 
-1. Branch is `main`, working tree clean. Migrations in `supabase/migrations/`: `0001_init.sql`, `0002_todo_stats.sql`, `0003_roles.sql` and `0004_app_permissions.sql` from T3C-B0 (`.claude/plans/backend/T3C-B0-Users-Table.md`, must be implemented first; if it is missing, **stop and report**). They are numbered `NNNN_name.sql`, not timestamped. The next file is `0005_companies.sql`.
+1. Branch is `main`, working tree clean. Migrations in `supabase/migrations/`: `0001_init.sql`, `0002_todo_stats.sql`, `0003_roles.sql`, `0004_app_permissions.sql` and `0005_user_admin.sql` from T3C-B0 (`.claude/plans/backend/T3C-B0-Users-Table.md`, must be implemented first; if it is missing, **stop and report**). They are numbered `NNNN_name.sql`, not timestamped. The next file is `0006_companies.sql`.
 2. `public.is_admin()` exists (`0001_init.sql`, redefined in `0003_roles.sql` to test `profiles.role_id` against the Admin role id `30000000-0000-0000-0000-000000000001`; `security definer`, executable by `authenticated` only). Policies of this table do not use it; they call `(select public.has_permission('<table>', '<action>'))`, which needs `0004_app_permissions.sql` (T3C-B0 phase 2: Super Admin role id `30000000-0000-0000-0000-000000000003`, `public.app_permissions`, `public.has_permission`). If `0004_app_permissions.sql` is missing, **stop and report**. The User role id is `30000000-0000-0000-0000-000000000002`.
 3. Table pattern in `0001_init.sql`: `id uuid primary key default gen_random_uuid()`, `alter table ... enable row level security`, `revoke all on public.<t> from anon, authenticated`, then explicit `grant ... to authenticated`, then policies.
-4. `supabase/seed.sql` is 44 lines. Lines 1-2 are the header:
+4. `supabase/seed.sql` is 58 lines (it also seeds a Super Admin user, T3C-B0 phase 2). Lines 1-3 are the header:
    `-- Local development seed. Test users only. NEVER run against a hosted project.`
-   `-- Passwords: admin@example.com / admin-password-123 , user@example.com / user-password-123`
-   The last line (44) is `  ('11111111-1111-1111-1111-111111111111', 'Admin-only reminder', false);`. It runs only on `pnpm db:reset`.
-5. `supabase/tests/database/` holds `rls.test.sql`, `seed.test.sql`, `todo_stats.test.sql`. `seed.test.sql` line 4 is `select plan(3);` and line 26 is `select * from finish();`. `rls.test.sql` already asserts "every public table has RLS enabled", so the new table is covered by that check automatically.
-6. `src/types/db.ts` line 11 is `export type Todo = Tables<'todos'>`.
-7. `src/App.tsx`: line 9 `import { DashboardOutlined, CheckSquareOutlined } from '@ant-design/icons'`; line 18 `import { TodoShow } from '@/pages/todos/TodoShow'`; the `todos` resource is the last entry of `resources` (lines 26-33); the `todos` routes are lines 66-71.
+   `-- Passwords: admin@example.com / admin-password-123 , user@example.com / user-password-123 ,`
+   `-- superadmin@example.com / superadmin-password-123`
+   The last line (58) is `  ('11111111-1111-1111-1111-111111111111', 'Admin-only reminder', false);`. It runs only on `pnpm db:reset`.
+5. `supabase/tests/database/` holds `rls.test.sql`, `seed.test.sql`, `todo_stats.test.sql`. `seed.test.sql` line 4 is `select plan(4);` and line 34 is `select * from finish();`. `rls.test.sql` already asserts "every public table has RLS enabled", so the new table is covered by that check automatically.
+6. `src/types/db.ts` contains the line `export type Todo = Tables<'todos'>` (T3C-B0 phase 3 adds `Profile` and `UserRow` below it).
+7. `src/App.tsx` (after T3C-B0 phase 3; line numbers shift, so use the find strings): the icon import is `import { DashboardOutlined, CheckSquareOutlined, TeamOutlined } from '@ant-design/icons'`; line 18 `import { TodoShow } from '@/pages/todos/TodoShow'`; the `todos` resource is the last entry of `resources` (lines 26-33); the `todos` routes are lines 66-71.
 8. `src/pages/` has `dashboard` and `todos` only. `src/types/database.types.ts` has no `companies` yet (0 matches). It is generated; never hand-edit it.
 9. `.prettierrc.json`: no semicolons, single quotes, trailing commas, width 100. `src/types/database.types.ts` is in `.prettierignore`.
-10. `README.md` Layout block: line 55 `migrations/0001_init.sql ...`, line 56 `migrations/0002_todo_stats.sql`, then the lines `migrations/0003_roles.sql ...` and `migrations/0004_app_permissions.sql ...` added by T3C-B0, line 58 `seed.sql                     local test users and todos`, line 65 `pages/dashboard, pages/todos`.
+10. `README.md` Layout block: line 55 `migrations/0001_init.sql ...`, line 56 `migrations/0002_todo_stats.sql`, then the lines `migrations/0003_roles.sql ...`, `migrations/0004_app_permissions.sql ...` and `migrations/0005_user_admin.sql ...` added by T3C-B0, the line `seed.sql                     local test users and todos`, and the line `pages/dashboard, pages/todos, pages/users` (line numbers shift; use the find strings).
 
 ## Decisions already made (do not reopen)
 
@@ -70,10 +71,10 @@ git status --short && git switch -c feat/T3C-B7-S8-Companies-Table && pnpm db:st
 
 #### Step 1. Migration (create file)
 
-Create `supabase/migrations/0005_companies.sql` with exactly this content:
+Create `supabase/migrations/0006_companies.sql` with exactly this content:
 
 ```sql
--- 0005_companies: the companies (brands) we operate under. Shared reference data.
+-- 0006_companies: the companies (brands) we operate under. Shared reference data.
 
 create table public.companies (
   id   uuid primary key default gen_random_uuid(),
@@ -140,7 +141,7 @@ on conflict (name) do nothing;
 ```
 
 **Gate:** `pnpm db:reset`
-**Expect:** exits 0 with no SQL error, the migrations list ends with `0005_companies.sql`, and the seed runs. Then `grep -c "companies" src/types/database.types.ts` prints a number greater than `0` (types were regenerated).
+**Expect:** exits 0 with no SQL error, the migrations list ends with `0006_companies.sql`, and the seed runs. Then `grep -c "companies" src/types/database.types.ts` prints a number greater than `0` (types were regenerated).
 
 #### Step 3. pgTAP: new test file (create)
 
@@ -283,7 +284,7 @@ rollback;
 
 #### Step 4. pgTAP: extend the seed test (edit `supabase/tests/database/seed.test.sql`)
 
-Edit A. Find: `select plan(3);` Replace with: `select plan(5);`
+Edit A. Find: `select plan(4);` Replace with: `select plan(6);`
 
 Edit B. Find (the last line):
 
@@ -318,7 +319,7 @@ select * from finish();
 ```
 
 **Gate:** `pnpm test:db`
-**Expect:** every file reports `ok` and the summary ends with `Result: PASS` (files: `companies.test.sql`, `rls.test.sql`, `seed.test.sql`, `todo_stats.test.sql`; `companies.test.sql` runs 15 tests, `seed.test.sql` runs 5). If `seed.test.sql` fails on the company count, `db:reset` was not run after Step 2: run `pnpm db:reset` and repeat, and if it still fails, stop and report.
+**Expect:** every file reports `ok` and the summary ends with `Result: PASS` (files: `companies.test.sql`, `rls.test.sql`, `seed.test.sql`, `todo_stats.test.sql`; `companies.test.sql` runs 15 tests, `seed.test.sql` runs 6). If `seed.test.sql` fails on the company count, `db:reset` was not run after Step 2: run `pnpm db:reset` and repeat, and if it still fails, stop and report.
 
 ### Phase 2: web
 
@@ -435,13 +436,18 @@ export function CompanyEdit() {
 Edit A. Find:
 
 ```tsx
-import { DashboardOutlined, CheckSquareOutlined } from '@ant-design/icons'
+import { DashboardOutlined, CheckSquareOutlined, TeamOutlined } from '@ant-design/icons'
 ```
 
 Replace with:
 
 ```tsx
-import { DashboardOutlined, CheckSquareOutlined, ShopOutlined } from '@ant-design/icons'
+import {
+  DashboardOutlined,
+  CheckSquareOutlined,
+  TeamOutlined,
+  ShopOutlined,
+} from '@ant-design/icons'
 ```
 
 Edit B. Find:
@@ -462,7 +468,7 @@ import { CompanyEdit } from '@/pages/companies/CompanyEdit'
 Edit C. Find:
 
 ```tsx
-    meta: { label: 'Todos', icon: <CheckSquareOutlined /> },
+    meta: { label: 'Users', icon: <TeamOutlined /> },
   },
 ]
 ```
@@ -470,7 +476,7 @@ Edit C. Find:
 Replace with:
 
 ```tsx
-    meta: { label: 'Todos', icon: <CheckSquareOutlined /> },
+    meta: { label: 'Users', icon: <TeamOutlined /> },
   },
   {
     name: 'companies',
@@ -506,19 +512,19 @@ Replace with:
 
 #### Step 8. README (edit `README.md`)
 
-Edit A. Find: `  migrations/0004_app_permissions.sql  Super Admin role, app_permissions, has_permission()`
+Edit A. Find: `  migrations/0005_user_admin.sql  is_super_admin(), admin_update_profile()`
 Replace with:
 
 ```
-  migrations/0004_app_permissions.sql  Super Admin role, app_permissions, has_permission()
-  migrations/0005_companies.sql  companies (brands), role-based RLS
+  migrations/0005_user_admin.sql  is_super_admin(), admin_update_profile()
+  migrations/0006_companies.sql  companies (brands), role-based RLS
 ```
 
 Edit B. Find: `  seed.sql                     local test users and todos`
 Replace with: `  seed.sql                     local test users, todos and the four companies`
 
-Edit C. Find: `  pages/dashboard, pages/todos`
-Replace with: `  pages/dashboard, pages/todos, pages/companies`
+Edit C. Find: `  pages/dashboard, pages/todos, pages/users`
+Replace with: `  pages/dashboard, pages/todos, pages/users, pages/companies`
 
 **Gate:** `pnpm exec prettier --check README.md .claude/plans/T3C-B7-S8-Companies-Table.md src/App.tsx src/types/db.ts src/pages/companies`
 **Expect:** `All matched files use Prettier code style!` If it lists a file, run `pnpm exec prettier --write` on **only that file**, then repeat.
@@ -529,15 +535,15 @@ Replace with: `  pages/dashboard, pages/todos, pages/companies`
 pnpm test:all
 ```
 
-**Expect:** lint, typecheck, vitest, pgTAP, Deno and Playwright all pass, exit 0. Then `git status --short` lists only: the plan file, `supabase/migrations/0005_companies.sql`, `supabase/seed.sql`, `supabase/tests/database/companies.test.sql`, `supabase/tests/database/seed.test.sql`, `src/types/database.types.ts`, `src/types/db.ts`, `src/App.tsx`, `src/pages/companies/` (3 files), `README.md`. Anything else: stop and report.
+**Expect:** lint, typecheck, vitest, pgTAP, Deno and Playwright all pass, exit 0. Then `git status --short` lists only: the plan file, `supabase/migrations/0006_companies.sql`, `supabase/seed.sql`, `supabase/tests/database/companies.test.sql`, `supabase/tests/database/seed.test.sql`, `src/types/database.types.ts`, `src/types/db.ts`, `src/App.tsx`, `src/pages/companies/` (3 files), `README.md`. Anything else: stop and report.
 
 ## Rollback
 
 Nothing is applied outside the local Docker database, so:
 
-- Before commit: `git switch main && git branch -D feat/T3C-B7-S8-Companies-Table`, then `pnpm db:reset` (rebuilds the local DB without `0005`).
+- Before commit: `git switch main && git branch -D feat/T3C-B7-S8-Companies-Table`, then `pnpm db:reset` (rebuilds the local DB without `0006`).
 - After commit, before merge: delete the branch and reset as above.
-- After merge, if a hosted DB already has `0005`: add a new migration `0006_drop_companies.sql` with `drop table public.companies;`. Never edit or delete an applied migration. (Stop and ask first if clients or other tables already reference `companies`.)
+- After merge, if a hosted DB already has `0006`: add a new migration `0007_drop_companies.sql` with `drop table public.companies;`. Never edit or delete an applied migration. (Stop and ask first if clients or other tables already reference `companies`.)
 
 ## Conventional commits
 
@@ -552,7 +558,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 (Use `Refs: T3C-B7` alone on commit 1, `Refs: T3C-S8` alone on commit 2.)
 
 1. `feat(db): add companies table with role-based RLS`
-   Files: `supabase/migrations/0005_companies.sql`, `src/types/database.types.ts`
+   Files: `supabase/migrations/0006_companies.sql`, `src/types/database.types.ts`
    Body: shared reference data; everyone signed in reads, only admins write.
 2. `feat(db): seed the four companies`
    Files: `supabase/seed.sql`
