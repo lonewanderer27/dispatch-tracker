@@ -91,6 +91,32 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"company_cleaners": {
+                  Row: {
+                    "cleaner_id": string,"company_id": string,"id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cleaner_id": string,"company_id": string,"id"?: string
+                  }
+                  Update: {
+                    "cleaner_id"?: string,"company_id"?: string,"id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "company_cleaners_cleaner_id_fkey"
+      columns: ["cleaner_id"]
+isOneToOne: false
+      referencedRelation: "cleaners"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "company_cleaners_company_id_fkey"
+      columns: ["company_id"]
+isOneToOne: false
+      referencedRelation: "companies"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"contacts": {
                   Row: {
                     "client_id": string,"contact_no": string,"first_name": string,"id": string,"last_name": string
