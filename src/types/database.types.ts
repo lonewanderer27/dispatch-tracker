@@ -319,14 +319,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "created_at": string,"display_name": string,"id": string,"role_id": string
+                    "created_at": string,"display_name": string,"id": string,"preferred_time_zone": string,"role_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"display_name"?: string,"id": string,"role_id"?: string
+                    "created_at"?: string,"display_name"?: string,"id": string,"preferred_time_zone"?: string,"role_id"?: string
                   }
                   Update: {
-                    "created_at"?: string,"display_name"?: string,"id"?: string,"role_id"?: string
+                    "created_at"?: string,"display_name"?: string,"id"?: string,"preferred_time_zone"?: string,"role_id"?: string
                   }
                   Relationships: [
                     {
@@ -414,6 +414,24 @@ isOneToOne: false
             "admin_update_profile":
 { Args: { "p_display_name": string,"p_role_id": string,"p_user_id": string }; Returns: undefined
                            },
+"get_cleaners_for_cleaning_job_id":
+{ Args: { "p_cleaning_job_id": string }; Returns: {
+              "cleaner_id": string,"full_name": string
+            }[]
+                           },
+"get_cleaning_jobs":
+{ Args: { "p_cleaner_ids"?: (string)[],"p_cleaning_type_ids"?: (string)[],"p_client_ids"?: (string)[],"p_company_ids"?: (string)[],"p_date_from"?: string,"p_date_range"?: string,"p_date_to"?: string,"p_feedback_search"?: string,"p_page"?: number,"p_page_size"?: number,"p_ratings"?: (number)[],"p_sort_by"?: string,"p_sort_dir"?: string,"p_time_zone"?: string }; Returns: {
+              "address": string,"avg_rating": number,"cleaners": Json,"cleaning_types": Json,"client_id": string,"client_name": string,"company_name": string,"description": string,"feedbacks": Json,"id": string,"rate": number,"schedule": string,"status_name": string,"total_count": number
+            }[]
+                           },
+"get_client_feedbacks_for_cleaning_job_id":
+{ Args: { "p_cleaning_job_id": string }; Returns: {
+              "created_at": string,"feedback": string,"id": string,"rating": number
+            }[]
+                           },
+"get_complete_address_for_property_id":
+{ Args: { "p_property_id": string }; Returns: string
+                           },
 "has_permission":
 { Args: { "p_action": string,"p_resource": string }; Returns: boolean
                            },
@@ -422,6 +440,9 @@ isOneToOne: false
                            },
 "is_super_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"is_valid_time_zone":
+{ Args: { "tz": string }; Returns: boolean
                            },
 "todo_stats":
 { Args: Record<PropertyKey, never>; Returns: {
