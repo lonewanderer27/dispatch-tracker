@@ -15,6 +15,8 @@ const ADMIN_WRITE_ONLY = new Set([
   'company_cleaners',
   'cleaning_types',
   'cleaning_statuses',
+  'areas',
+  'items',
 ])
 const READ_ACTIONS = new Set(['list', 'show'])
 

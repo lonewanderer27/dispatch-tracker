@@ -43,6 +43,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"areas": {
+                  Row: {
+                    "description": string | null,"id": string,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "description"?: string | null,"id"?: string,"name": string
+                  }
+                  Update: {
+                    "description"?: string | null,"id"?: string,"name"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"cleaners": {
                   Row: {
                     "first_name": string,"id": string,"last_name": string,"middle_name": string | null
@@ -165,6 +179,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"items": {
+                  Row: {
+                    "description": string | null,"id": string,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "description"?: string | null,"id"?: string,"name": string
+                  }
+                  Update: {
+                    "description"?: string | null,"id"?: string,"name"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"profiles": {
                   Row: {
                     "created_at": string,"display_name": string,"id": string,"role_id": string
@@ -184,6 +212,46 @@ isOneToOne: false
       referencedRelation: "roles"
       referencedColumns: ["id"]
     }
+                  ]
+                },"properties": {
+                  Row: {
+                    "address_line_1": string,"address_line_2": string | null,"city": string,"client_id": string,"country_code": string,"id": string,"parking_instructions": string | null,"postal_code": string,"property_type_id": string,"province_state": string,"sqft": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "address_line_1": string,"address_line_2"?: string | null,"city": string,"client_id": string,"country_code": string,"id"?: string,"parking_instructions"?: string | null,"postal_code": string,"property_type_id": string,"province_state": string,"sqft"?: number | null
+                  }
+                  Update: {
+                    "address_line_1"?: string,"address_line_2"?: string | null,"city"?: string,"client_id"?: string,"country_code"?: string,"id"?: string,"parking_instructions"?: string | null,"postal_code"?: string,"property_type_id"?: string,"province_state"?: string,"sqft"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "properties_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "properties_property_type_id_fkey"
+      columns: ["property_type_id"]
+isOneToOne: false
+      referencedRelation: "property_types"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"property_types": {
+                  Row: {
+                    "id": string,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: string,"name": string
+                  }
+                  Update: {
+                    "id"?: string,"name"?: string
+                  }
+                  Relationships: [
+                    
                   ]
                 },"roles": {
                   Row: {
