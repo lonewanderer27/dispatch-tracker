@@ -54,6 +54,7 @@ supabase/
   config.jsonc                 local stack config (auth, functions, realtime)
   migrations/0001_init.sql     profiles, todos, RLS, realtime
   migrations/0002_todo_stats.sql
+  migrations/0003_roles.sql      roles (Admin, User), profiles.role_id
   seed.sql                     local test users and todos
   functions/exchange-rate/     edge function + Deno tests
   tests/database/              pgTAP tests
@@ -86,5 +87,5 @@ e2e/                           Playwright specs and the Frankfurter stub
 
 - `todo_stats` is `security invoker`. Switching it to `security definer` would bypass RLS. The pgTAP isolation test guards against that.
 - Admins have an RLS override on `todos`, so for an admin `todo_stats` counts every user's todos, not only their own.
-- Users can update only `profiles.display_name`. `role` is column-protected and can only be changed with direct DB access.
+- Users can update only `profiles.display_name`. `role_id` (Admin or User, from the `roles` table) is column-protected and can only be changed with direct DB access. Admins can read and write the dispatch tables; Users can only read them. Anonymous sign-in is off.
 - The edge function runs in Docker. For offline e2e, `EXCHANGE_API_URL` points it at the stub; see `supabase/functions/.env.example`.
