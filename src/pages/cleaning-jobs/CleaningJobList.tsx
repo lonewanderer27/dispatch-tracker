@@ -1,6 +1,17 @@
 import { useState } from 'react'
 import { List } from '@refinedev/antd'
-import { Alert, Button, Empty, Rate, Space, Table, Tag, Typography, type TableProps } from 'antd'
+import {
+  Alert,
+  Button,
+  Empty,
+  Rate,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+  type TableProps,
+} from 'antd'
 import {
   DEFAULT_QUERY,
   EMPTY_FILTERS,
@@ -9,6 +20,7 @@ import {
   type CleaningJobQuery,
   type CleaningJobSortKey,
 } from '@/features/cleaning-jobs/api'
+import { firstName } from '@/features/cleaning-jobs/cleanerName'
 import { useCleaningJobs } from '@/features/cleaning-jobs/hooks'
 import { formatSchedule } from '@/features/cleaning-jobs/timeZone'
 import { usePreferredTimeZone } from '@/features/cleaning-jobs/usePreferredTimeZone'
@@ -119,7 +131,9 @@ export function CleaningJobList() {
             ) : (
               <Space wrap>
                 {record.cleaners.map((cleaner) => (
-                  <Tag key={cleaner.cleaner_id}>{cleaner.full_name}</Tag>
+                  <Tooltip key={cleaner.cleaner_id} title={cleaner.full_name}>
+                    <Tag aria-label={cleaner.full_name}>{firstName(cleaner.full_name)}</Tag>
+                  </Tooltip>
                 ))}
               </Space>
             )
