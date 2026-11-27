@@ -2,7 +2,6 @@
 // Takes the client as an argument so tests can pass a mock.
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import type { AppSupabaseClient } from '@/shared/supabase'
-import type { TodoStats } from '@/types/db'
 
 export interface ExchangeRateResult {
   base: string
@@ -12,8 +11,6 @@ export interface ExchangeRateResult {
   fetchedAt: string
   source: 'frankfurter'
 }
-
-const EMPTY_STATS: TodoStats = { total: 0, done: 0, pending: 0, pct_done: 0 }
 
 async function readErrorDetail(error: unknown): Promise<string> {
   if (error instanceof FunctionsHttpError) {
@@ -41,10 +38,4 @@ export async function fetchExchangeRate(
   const data = result.data
   if (!data) throw new Error('Empty response from exchange-rate')
   return data
-}
-
-export async function fetchTodoStats(client: AppSupabaseClient): Promise<TodoStats> {
-  const { data, error } = await client.rpc('todo_stats')
-  if (error) throw new Error(error.message)
-  return data[0] ?? EMPTY_STATS
 }

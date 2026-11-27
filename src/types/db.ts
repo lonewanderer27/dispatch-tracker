@@ -8,7 +8,6 @@ export type TablesInsert<T extends keyof PublicSchema['Tables']> =
 export type TablesUpdate<T extends keyof PublicSchema['Tables']> =
   PublicSchema['Tables'][T]['Update']
 
-export type Todo = Tables<'todos'>
 export type Company = Tables<'companies'>
 export type Client = Tables<'clients'>
 export type Contact = Tables<'contacts'>
@@ -45,4 +44,3 @@ export type CleaningJobListRow = Omit<
   feedbacks: { rating: number; feedback: string | null; created_at: string }[]
 }
 export type CleanerWithCompanies = Cleaner & { company_cleaners: CleanerCompanyLink[] }
-export type TodoStats = PublicSchema['Functions']['todo_stats']['Returns'][number]

@@ -7,7 +7,7 @@ async function signInAsSuperAdmin(page: Page) {
   await page.getByLabel('Email').fill('superadmin@example.com')
   await page.getByLabel('Password').fill('superadmin-password-123') // local seed only
   await page.getByRole('button', { name: /sign in/i }).click()
-  await expect(page.getByTestId('btn-call-rpc')).toBeVisible()
+  await expect(page.getByTestId('btn-invoke-edge')).toBeVisible()
 }
 
 async function renameUser(page: Page, name: string) {
@@ -22,8 +22,8 @@ async function renameUser(page: Page, name: string) {
 test.describe('as a normal user', () => {
   test('the Users menu item is hidden and /users redirects home', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByTestId('btn-call-rpc')).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Todos' })).toBeVisible()
+    await expect(page.getByTestId('btn-invoke-edge')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Companies' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Users' })).toHaveCount(0)
     await page.goto('/users')
     await expect(page).toHaveURL(/\/$/)

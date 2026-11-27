@@ -11,6 +11,6 @@ setup('log in as seeded user and save storage state', async ({ page }) => {
   await page.getByLabel('Email').fill(USER_EMAIL)
   await page.getByLabel('Password').fill(USER_PASSWORD)
   await page.getByRole('button', { name: /sign in/i }).click()
-  await expect(page.getByTestId('btn-call-rpc')).toBeVisible()
+  await expect(page.getByTestId('btn-invoke-edge')).toBeVisible()
   await page.context().storageState({ path: AUTH_FILE })
 })

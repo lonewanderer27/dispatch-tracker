@@ -10,13 +10,11 @@ import { companyCleanersFeature } from '@/features/company-cleaners/routes'
 import { contactsFeature } from '@/features/contacts/routes'
 import { dashboardFeature } from '@/features/dashboard/routes'
 import { itemsFeature } from '@/features/items/routes'
-import { todosFeature } from '@/features/todos/routes'
 import { usersFeature } from '@/features/users/routes'
 
 // Every feature the app mounts. The sidebar shows them in this order.
 export const features: FeatureModule[] = [
   dashboardFeature,
-  todosFeature,
   usersFeature,
   companiesFeature,
   clientsFeature,

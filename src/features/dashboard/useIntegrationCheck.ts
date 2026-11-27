@@ -1,11 +1,6 @@
 import { useCallback, useState } from 'react'
 import { supabase } from '@/shared/supabase'
-import {
-  fetchExchangeRate,
-  fetchTodoStats,
-  type ExchangeRateResult,
-} from '@/features/dashboard/api'
-import type { TodoStats } from '@/types/db'
+import { fetchExchangeRate, type ExchangeRateResult } from '@/features/dashboard/api'
 
 export type CheckStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -45,12 +40,5 @@ export function useExchangeRateCheck() {
     () => runCheck(() => fetchExchangeRate(supabase, 'USD', 'EUR')),
     [runCheck],
   )
-  return { ...rest, run }
-}
-
-/** Dashboard check 2: call the todo_stats RPC. */
-export function useTodoStatsCheck() {
-  const { run: runCheck, ...rest } = useIntegrationCheck<TodoStats>()
-  const run = useCallback(() => runCheck(() => fetchTodoStats(supabase)), [runCheck])
   return { ...rest, run }
 }
