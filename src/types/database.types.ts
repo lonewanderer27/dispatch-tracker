@@ -43,6 +43,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"cleaners": {
+                  Row: {
+                    "first_name": string,"id": string,"last_name": string,"middle_name": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "first_name": string,"id"?: string,"last_name": string,"middle_name"?: string | null
+                  }
+                  Update: {
+                    "first_name"?: string,"id"?: string,"last_name"?: string,"middle_name"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"clients": {
                   Row: {
                     "company_id": string,"id": string,"name": string
