@@ -1,7 +1,7 @@
 # 0003 Cleaning job data model
 
 - Ticket: T3C-B15, T3C-B16, T3C-B18, T3C-B19, T3C-B26, T3C-B27, T3C-B33
-- Plans: `.claude/plans/backend/T3C-B15-Cleaning-Jobs-Table.md`, `T3C-B16-Cleaning-Job-Updates-Table.md`, `T3C-B18-Cleaning-Job-Assignments-Table.md`, `T3C-B19-Cleaning-Feedbacks-Table.md`, `T3C-B26-Cleaning-Job-Areas-Table.md`, `T3C-B27-Cleaning-Job-Items-Table.md`, `T3C-B33-Cleaning-Job-Cleaning-Types-Table.md`
+- Plans: `.claude/plans/T3C-B15-Cleaning-Jobs-Table.md`, `T3C-B16-Cleaning-Job-Updates-Table.md`, `T3C-B18-Cleaning-Job-Assignments-Table.md`, `T3C-B19-Cleaning-Feedbacks-Table.md`, `T3C-B26-Cleaning-Job-Areas-Table.md`, `T3C-B27-Cleaning-Job-Items-Table.md`, `T3C-B33-Cleaning-Job-Cleaning-Types-Table.md`
 - Date: 2026-11-27
 - Status: implemented
 - Builds on: [0001 Role-based access](0001-Role-Based-Access.md)

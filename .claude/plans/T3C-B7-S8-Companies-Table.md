@@ -13,7 +13,7 @@ Source: sprint sheet `The Tidy Team - Digital Platforms Sprint - Sprint 2_ Nov-2
 
 ## Facts (verified 2026-11-27)
 
-1. Branch is `main`, working tree clean. Migrations in `supabase/migrations/`: `0001_init.sql`, `0002_todo_stats.sql`, `0003_roles.sql`, `0004_app_permissions.sql` and `0005_user_admin.sql` from T3C-B0 (`.claude/plans/backend/T3C-B0-Users-Table.md`, must be implemented first; if it is missing, **stop and report**). They are numbered `NNNN_name.sql`, not timestamped. The next file is `0006_companies.sql`.
+1. Branch is `main`, working tree clean. Migrations in `supabase/migrations/`: `0001_init.sql`, `0002_todo_stats.sql`, `0003_roles.sql`, `0004_app_permissions.sql` and `0005_user_admin.sql` from T3C-B0 (`.claude/plans/T3C-B0-Users-Table.md`, must be implemented first; if it is missing, **stop and report**). They are numbered `NNNN_name.sql`, not timestamped. The next file is `0006_companies.sql`.
 2. `public.is_admin()` exists (`0001_init.sql`, redefined in `0003_roles.sql` to test `profiles.role_id` against the Admin role id `30000000-0000-0000-0000-000000000001`; `security definer`, executable by `authenticated` only). Policies of this table do not use it; they call `(select public.has_permission('<table>', '<action>'))`, which needs `0004_app_permissions.sql` (T3C-B0 phase 2: Super Admin role id `30000000-0000-0000-0000-000000000003`, `public.app_permissions`, `public.has_permission`). If `0004_app_permissions.sql` is missing, **stop and report**. The User role id is `30000000-0000-0000-0000-000000000002`.
 3. Table pattern in `0001_init.sql`: `id uuid primary key default gen_random_uuid()`, `alter table ... enable row level security`, `revoke all on public.<t> from anon, authenticated`, then explicit `grant ... to authenticated`, then policies.
 4. `supabase/seed.sql` is 58 lines (it also seeds a Super Admin user, T3C-B0 phase 2). Lines 1-3 are the header:
@@ -526,7 +526,7 @@ Replace with: `  seed.sql                     local test users, todos and the fo
 Edit C. Find: `  pages/dashboard, pages/todos, pages/users`
 Replace with: `  pages/dashboard, pages/todos, pages/users, pages/companies`
 
-**Gate:** `pnpm exec prettier --check README.md .claude/plans/backend/T3C-B7-S8-Companies-Table.md src/App.tsx src/types/db.ts src/pages/companies`
+**Gate:** `pnpm exec prettier --check README.md .claude/plans/T3C-B7-S8-Companies-Table.md src/App.tsx src/types/db.ts src/pages/companies`
 **Expect:** `All matched files use Prettier code style!` If it lists a file, run `pnpm exec prettier --write` on **only that file**, then repeat.
 
 ### Step 9. Full gate
@@ -569,6 +569,6 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 5. `docs: add companies to the README layout`
    Files: `README.md`
 6. `docs(plans): fix companies plan commit path`
-   Files: `.claude/plans/backend/T3C-B7-S8-Companies-Table.md`
+   Files: `.claude/plans/T3C-B7-S8-Companies-Table.md`
 
 PR title: `feat(db): add companies table and seed` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.

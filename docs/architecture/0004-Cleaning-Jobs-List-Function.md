@@ -1,7 +1,7 @@
 # 0004 Cleaning jobs list: one database function and one hook per function
 
 - Ticket: T3C-F35
-- Plan: `.claude/plans/backend/T3C-F35-Cleaning-Jobs-List.md`
+- Plan: `.claude/plans/T3C-F35-Cleaning-Jobs-List.md`
 - Date: 2026-11-27
 - Status: implemented
 - Builds on: [0003 Cleaning job data model](0003-Cleaning-Job-Data-Model.md)

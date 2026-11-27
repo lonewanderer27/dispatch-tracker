@@ -571,7 +571,7 @@ pnpm lint && pnpm typecheck && pnpm test
 **Expect:** all exit 0. A type error on `profile?.roles.name` means the types were not regenerated: run `pnpm db:types` and repeat; if it persists, stop and report.
 
 ```bash
-pnpm exec prettier --check README.md src/providers/authProvider.ts src/providers/authProvider.test.ts .claude/plans/backend/T3C-B0-Users-Table.md
+pnpm exec prettier --check README.md src/providers/authProvider.ts src/providers/authProvider.test.ts .claude/plans/T3C-B0-Users-Table.md
 ```
 
 **Expect:** `All matched files use Prettier code style!` If a file is listed, run `pnpm exec prettier --write` on **only that file**, then repeat.
@@ -592,7 +592,7 @@ Run these only after Phase 1 is done and green. Working directory: the repo root
 git branch --show-current && git status --short && ls supabase/migrations && pnpm db:reset && pnpm test:db
 ```
 
-**Expect:** branch `feat/T3C-B0-Users-Table`; `git status --short` lists only the plan files under `.claude/plans/backend/` (the T3C-B0 plan and the other table plans, edited before Phase 2 and committed in Phase 2 commits 10 and 11), with no other changes; the `ls` shows exactly `0001_init.sql`, `0002_todo_stats.sql`, `0003_roles.sql`; `db:reset` exits 0; `pnpm test:db` ends with `Result: PASS`. Anything else: stop and report.
+**Expect:** branch `feat/T3C-B0-Users-Table`; `git status --short` lists only the plan files under `.claude/plans/` (the T3C-B0 plan and the other table plans, edited before Phase 2 and committed in Phase 2 commits 10 and 11), with no other changes; the `ls` shows exactly `0001_init.sql`, `0002_todo_stats.sql`, `0003_roles.sql`; `db:reset` exits 0; `pnpm test:db` ends with `Result: PASS`. Anything else: stop and report.
 
 ### Step 10. Migration (create file)
 
@@ -1197,7 +1197,7 @@ Create `docs/architecture/0001-Role-Based-Access.md` with exactly this content:
 # 0001 Role-based access
 
 - Ticket: T3C-B0
-- Plan: `.claude/plans/backend/T3C-B0-Users-Table.md`
+- Plan: `.claude/plans/T3C-B0-Users-Table.md`
 - Date: 2026-11-27
 - Status: implemented
 
@@ -1284,7 +1284,7 @@ pnpm lint && pnpm typecheck && pnpm test
 **Expect:** all exit 0.
 
 ```bash
-pnpm exec prettier --check README.md AGENTS.md docs/architecture/0001-Role-Based-Access.md .claude/plans/backend/T3C-B0-Users-Table.md
+pnpm exec prettier --check README.md AGENTS.md docs/architecture/0001-Role-Based-Access.md .claude/plans/T3C-B0-Users-Table.md
 ```
 
 **Expect:** `All matched files use Prettier code style!` If a file is listed, run `pnpm exec prettier --write` on **only that file**, then repeat.
@@ -1293,7 +1293,7 @@ pnpm exec prettier --check README.md AGENTS.md docs/architecture/0001-Role-Based
 pnpm test:all
 ```
 
-**Expect:** lint, typecheck, vitest, pgTAP, Deno and Playwright all pass. Then `git status --short` lists only: this plan, `supabase/migrations/0004_app_permissions.sql`, `supabase/seed.sql`, `supabase/tests/database/rbac.test.sql`, `supabase/tests/database/roles.test.sql`, `supabase/tests/database/seed.test.sql`, `src/types/database.types.ts`, `README.md`, `AGENTS.md`, `docs/architecture/0001-Role-Based-Access.md`, plus the changed plan files under `.claude/plans/backend/` for T3C-B5 to T3C-B33 and T3C-S31. Anything else: stop and report.
+**Expect:** lint, typecheck, vitest, pgTAP, Deno and Playwright all pass. Then `git status --short` lists only: this plan, `supabase/migrations/0004_app_permissions.sql`, `supabase/seed.sql`, `supabase/tests/database/rbac.test.sql`, `supabase/tests/database/roles.test.sql`, `supabase/tests/database/seed.test.sql`, `src/types/database.types.ts`, `README.md`, `AGENTS.md`, `docs/architecture/0001-Role-Based-Access.md`, plus the changed plan files under `.claude/plans/` for T3C-B5 to T3C-B33 and T3C-S31. Anything else: stop and report.
 
 ## Phase 3 steps
 
@@ -1305,7 +1305,7 @@ Run these only after Phases 1 and 2 are done and green. Working directory: the r
 git branch --show-current && git status --short && ls supabase/migrations && pnpm db:reset && pnpm test:db
 ```
 
-**Expect:** branch `feat/T3C-B0-Users-Table`; `git status --short` lists only the plan files under `.claude/plans/backend/` (edited before Phase 3 and committed in Phase 3 commits 18 and 19), with no other changes; the `ls` shows exactly `0001_init.sql`, `0002_todo_stats.sql`, `0003_roles.sql`, `0004_app_permissions.sql`; `db:reset` exits 0; `pnpm test:db` ends with `Result: PASS` (85 tests: `rbac` 38, `rls` 15, `roles` 22, `seed` 4, `todo_stats` 6). Anything else: stop and report.
+**Expect:** branch `feat/T3C-B0-Users-Table`; `git status --short` lists only the plan files under `.claude/plans/` (edited before Phase 3 and committed in Phase 3 commits 18 and 19), with no other changes; the `ls` shows exactly `0001_init.sql`, `0002_todo_stats.sql`, `0003_roles.sql`, `0004_app_permissions.sql`; `db:reset` exits 0; `pnpm test:db` ends with `Result: PASS` (85 tests: `rbac` 38, `rls` 15, `roles` 22, `seed` 4, `todo_stats` 6). Anything else: stop and report.
 
 ### Step 19. Migration (create file)
 
@@ -2052,7 +2052,7 @@ Create `docs/architecture/0002-User-Management.md` with exactly this content:
 # 0002 User management
 
 - Ticket: T3C-B0
-- Plan: `.claude/plans/backend/T3C-B0-Users-Table.md` (Phase 3)
+- Plan: `.claude/plans/T3C-B0-Users-Table.md` (Phase 3)
 - Date: 2026-11-27
 - Status: implemented
 - Builds on: [0001 Role-based access](0001-Role-Based-Access.md)
@@ -2136,7 +2136,7 @@ Then run `pnpm exec prettier --write README.md docs/architecture/0002-User-Manag
 ### Step 27. Phase 3 gates
 
 ```bash
-pnpm exec prettier --check README.md docs/architecture .claude/plans/backend/T3C-B0-Users-Table.md e2e/users.spec.ts src/pages/users src/features/users
+pnpm exec prettier --check README.md docs/architecture .claude/plans/T3C-B0-Users-Table.md e2e/users.spec.ts src/pages/users src/features/users
 ```
 
 **Expect:** `All matched files use Prettier code style!` If a file is listed, run `pnpm exec prettier --write` on **only that file**, then repeat.
@@ -2145,7 +2145,7 @@ pnpm exec prettier --check README.md docs/architecture .claude/plans/backend/T3C
 pnpm test:all
 ```
 
-**Expect:** lint, typecheck, vitest, pgTAP (103 tests), Deno and Playwright all pass. Then `git status --short` lists only: this plan, `supabase/migrations/0005_user_admin.sql`, `supabase/tests/database/user_admin.test.sql`, `src/types/database.types.ts`, `src/types/db.ts`, `src/features/users/roles.ts`, `src/features/users/api.ts`, `src/features/users/api.test.ts`, `src/providers/accessControlProvider.ts`, `src/providers/accessControlProvider.test.ts`, `src/providers/authProvider.ts`, `src/providers/authProvider.test.ts`, `src/pages/users/UserList.tsx`, `src/pages/users/UserEdit.tsx`, `src/App.tsx`, `e2e/users.spec.ts`, `docs/architecture/0002-User-Management.md`, `docs/architecture/0001-Role-Based-Access.md`, `README.md`, plus the changed plan files under `.claude/plans/backend/` for T3C-B5 to T3C-B33 and T3C-S31. Anything else: stop and report.
+**Expect:** lint, typecheck, vitest, pgTAP (103 tests), Deno and Playwright all pass. Then `git status --short` lists only: this plan, `supabase/migrations/0005_user_admin.sql`, `supabase/tests/database/user_admin.test.sql`, `src/types/database.types.ts`, `src/types/db.ts`, `src/features/users/roles.ts`, `src/features/users/api.ts`, `src/features/users/api.test.ts`, `src/providers/accessControlProvider.ts`, `src/providers/accessControlProvider.test.ts`, `src/providers/authProvider.ts`, `src/providers/authProvider.test.ts`, `src/pages/users/UserList.tsx`, `src/pages/users/UserEdit.tsx`, `src/App.tsx`, `e2e/users.spec.ts`, `docs/architecture/0002-User-Management.md`, `docs/architecture/0001-Role-Based-Access.md`, `README.md`, plus the changed plan files under `.claude/plans/` for T3C-B5 to T3C-B33 and T3C-S31. Anything else: stop and report.
 
 ## Rollback
 
@@ -2174,7 +2174,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 3. `docs: document roles and admin-write access`
    Files: `README.md`
 4. `docs(plans): add T3C-B0 plan`
-   Files: `.claude/plans/backend/T3C-B0-Users-Table.md`
+   Files: `.claude/plans/T3C-B0-Users-Table.md`
 
 Phase 2 (new commits on the same branch; Phase 1 commits 1-4 already exist):
 
@@ -2190,9 +2190,9 @@ Phase 2 (new commits on the same branch; Phase 1 commits 1-4 already exist):
 9. `docs: add architecture 0001 role-based access`
    Files: `docs/architecture/0001-Role-Based-Access.md`, `README.md`
 10. `docs(plans): add T3C-B0 phase 2`
-    Files: `.claude/plans/backend/T3C-B0-Users-Table.md`
+    Files: `.claude/plans/T3C-B0-Users-Table.md`
 11. `docs(plans): move table plans onto app_permissions`
-    Files: every other file in `.claude/plans/backend/` that changed (T3C-B5 to T3C-B33, T3C-S31)
+    Files: every other file in `.claude/plans/` that changed (T3C-B5 to T3C-B33, T3C-S31)
     Body: renumbers their migrations by one (they now start at `0005`) and replaces `is_admin()` policies with `has_permission()` policies plus their own `app_permissions` rows.
 
 Phase 3 (new commits on the same branch; commits 1-11 already exist):
@@ -2211,13 +2211,13 @@ Phase 3 (new commits on the same branch; commits 1-11 already exist):
 17. `docs: add architecture 0002 user management`
     Files: `docs/architecture/0002-User-Management.md`, `docs/architecture/0001-Role-Based-Access.md`, `README.md`
 18. `docs(plans): add T3C-B0 phase 3`
-    Files: `.claude/plans/backend/T3C-B0-Users-Table.md`
+    Files: `.claude/plans/T3C-B0-Users-Table.md`
 19. `docs(plans): move table plans onto 0006`
-    Files: every other file in `.claude/plans/backend/` that changed (T3C-B5 to T3C-B33, T3C-S31)
+    Files: every other file in `.claude/plans/` that changed (T3C-B5 to T3C-B33, T3C-S31)
     Body: renumbers their migrations by one (they now start at `0006`), as Phase 3 requires. The commit list above had no commit for them.
-    Files: `.claude/plans/backend/T3C-B0-Users-Table.md`
+    Files: `.claude/plans/T3C-B0-Users-Table.md`
 20. `docs(plans): renumber table plans after user admin`
-    Files: every other file in `.claude/plans/backend/` that changed (T3C-B5 to T3C-B33, T3C-S31)
+    Files: every other file in `.claude/plans/` that changed (T3C-B5 to T3C-B33, T3C-S31)
     Body: their migrations move up by one (they now start at `0006`), and the companies plan's anchors in `App.tsx`, `README.md` and `seed.test.sql` follow the new state.
 
 PR title: `feat(db): add roles and link profiles to them` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.

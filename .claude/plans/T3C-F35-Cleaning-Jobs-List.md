@@ -5180,7 +5180,7 @@ Create `docs/architecture/0007-Color-Motifs.md` with exactly this content:
 # 0007 Color motifs: one palette for the pills of companies, cleaning types and statuses
 
 - Ticket: T3C-F35 (Phase 2)
-- Plan: `.claude/plans/backend/T3C-F35-Cleaning-Jobs-List.md`
+- Plan: `.claude/plans/T3C-F35-Cleaning-Jobs-List.md`
 - Date: 2026-11-27
 - Status: implemented
 - Builds on: [0004 Cleaning jobs list function](0004-Cleaning-Jobs-List-Function.md)
@@ -5486,7 +5486,7 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 4. `test(web): cover time zone formatting and cleaning job hooks`
    Files: `src/features/cleaning-jobs/timeZone.test.ts`, `src/features/cleaning-jobs/api.test.ts`, `src/features/cleaning-jobs/hooks.test.tsx`, `src/features/cleaning-jobs/filterChips.test.ts`, `src/features/cleaning-jobs/usePreferredTimeZone.test.tsx`, `src/components/cleaning-jobs/*.test.tsx`, `src/pages/cleaning-jobs/CleaningJobList.test.tsx`, `e2e/cleaning-jobs.spec.ts`
 5. `docs(plans): add T3C-F35 plan`
-   Files: `.claude/plans/backend/T3C-F35-Cleaning-Jobs-List.md`
+   Files: `.claude/plans/T3C-F35-Cleaning-Jobs-List.md`
 
 PR title: `feat(web): add Cleaning Jobs list` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.
 
@@ -5516,9 +5516,9 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 7. `docs(agents): document the color motifs architecture`
    Files: `docs/architecture/0007-Color-Motifs.md`, `README.md`
 8. `docs(plans): shift later table plans past 0029_color_motifs`
-   Files: `.claude/plans/backend/T3C-B0-Users-Table.md`, `.claude/plans/backend/T3C-B17-Preferred-Cleaners-Table.md`, `.claude/plans/backend/T3C-B26-Cleaning-Job-Areas-Table.md`, `.claude/plans/backend/T3C-B27-Cleaning-Job-Items-Table.md`, `.claude/plans/backend/T3C-B28-S29-Invoice-Statuses-Table.md`, `.claude/plans/backend/T3C-B30-Invoice-Templates-Table.md`, `.claude/plans/backend/T3C-S31-Invoice-Templates-Seed.md`, `.claude/plans/backend/T3C-B32-Invoices-Table.md`
+   Files: `.claude/plans/T3C-B0-Users-Table.md`, `.claude/plans/T3C-B17-Preferred-Cleaners-Table.md`, `.claude/plans/T3C-B26-Cleaning-Job-Areas-Table.md`, `.claude/plans/T3C-B27-Cleaning-Job-Items-Table.md`, `.claude/plans/T3C-B28-S29-Invoice-Statuses-Table.md`, `.claude/plans/T3C-B30-Invoice-Templates-Table.md`, `.claude/plans/T3C-S31-Invoice-Templates-Seed.md`, `.claude/plans/T3C-B32-Invoices-Table.md`
 9. `docs(plans): add the color motifs phase to the T3C-F35 plan`
-   Files: `.claude/plans/backend/T3C-F35-Cleaning-Jobs-List.md`
+   Files: `.claude/plans/T3C-F35-Cleaning-Jobs-List.md`
 
 The Phase 2 commits go on the same pull request as Phase 1 (PR title `feat(web): add Cleaning Jobs list`, unchanged). Merge with a normal merge commit.
   test('the Clients and Company cleaners lists show companies as coloured pills', async ({
@@ -5710,4 +5710,4 @@ Every commit ends with `Refs: T3C-F35` and the `Co-Authored-By` line.
 6. `test(web): cover the assignee first name`
    Files: `src/features/cleaning-jobs/cleanerName.test.ts`, `src/pages/cleaning-jobs/CleaningJobList.test.tsx`, `e2e/cleaning-jobs.spec.ts`
 7. `docs(plans): add Phase 3 to the T3C-F35 plan`
-   Files: `.claude/plans/backend/T3C-F35-Cleaning-Jobs-List.md`
+   Files: `.claude/plans/T3C-F35-Cleaning-Jobs-List.md`

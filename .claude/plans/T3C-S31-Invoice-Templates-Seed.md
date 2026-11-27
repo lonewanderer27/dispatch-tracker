@@ -145,6 +145,6 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 2. `test(db): cover the invoice template seed`
    Files: `supabase/tests/database/invoice_templates_seed.test.sql`
 3. `docs(plans): add T3C-S31 plan`
-   Files: `.claude/plans/backend/T3C-S31-Invoice-Templates-Seed.md`
+   Files: `.claude/plans/T3C-S31-Invoice-Templates-Seed.md`
 
 PR title: `feat(db): seed invoice templates` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.

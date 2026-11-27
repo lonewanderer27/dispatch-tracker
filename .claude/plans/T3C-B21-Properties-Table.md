@@ -12,10 +12,10 @@ Source: sprint sheet `The Tidy Team - Digital Platforms Sprint - Sprint 2_ Nov-2
 
 ## Facts (verified 2026-11-27)
 
-1. Branch is `main`. Migrations are numbered `NNNN_name.sql`. This plan adds `supabase/migrations/0019_properties.sql`, so migrations up to `0018` must already exist. **As built:** `0018` exists (commit `b713621`, T3C-B20). `0013` to `0017` are still missing, but the Step 0 Expect line (list ends at `0018`) matched. Plans are applied in migration order: roles is `0003`, app_permissions is `0004` and user admin is `0005` (T3C-B0), companies is `0006` (`.claude/plans/backend/T3C-B7-S8-Companies-Table.md`).
+1. Branch is `main`. Migrations are numbered `NNNN_name.sql`. This plan adds `supabase/migrations/0019_properties.sql`, so migrations up to `0018` must already exist. **As built:** `0018` exists (commit `b713621`, T3C-B20). `0013` to `0017` are still missing, but the Step 0 Expect line (list ends at `0018`) matched. Plans are applied in migration order: roles is `0003`, app_permissions is `0004` and user admin is `0005` (T3C-B0), companies is `0006` (`.claude/plans/T3C-B7-S8-Companies-Table.md`).
 2. Required earlier migrations (plan that creates each): `0003_roles.sql` and `0004_app_permissions.sql` (T3C-B0); `0007_clients.sql` (T3C-B6); `0018_property_types.sql` (T3C-B20-S34). If any is missing, **stop and report**.
 3. Table `public.properties` does not exist yet, and `src/types/database.types.ts` has no `properties` entry. That file is generated; never hand-edit it.
-4. Roles come from T3C-B0 (`.claude/plans/backend/T3C-B0-Users-Table.md`): `supabase/migrations/0003_roles.sql` creates `public.roles` (Admin id `30000000-0000-0000-0000-000000000001`, User id `30000000-0000-0000-0000-000000000002`) and replaces `profiles.role` with `profiles.role_id`. `public.is_admin()` is true when the caller's profile has the Admin role id. Policies of this table do not use it; they call `(select public.has_permission('<table>', '<action>'))`, which needs `0004_app_permissions.sql` (T3C-B0 phase 2: Super Admin role id `30000000-0000-0000-0000-000000000003`, `public.app_permissions`, `public.has_permission`). If `0004_app_permissions.sql` is missing, **stop and report**. If `0003_roles.sql` is missing, **stop and report**.
+4. Roles come from T3C-B0 (`.claude/plans/T3C-B0-Users-Table.md`): `supabase/migrations/0003_roles.sql` creates `public.roles` (Admin id `30000000-0000-0000-0000-000000000001`, User id `30000000-0000-0000-0000-000000000002`) and replaces `profiles.role` with `profiles.role_id`. `public.is_admin()` is true when the caller's profile has the Admin role id. Policies of this table do not use it; they call `(select public.has_permission('<table>', '<action>'))`, which needs `0004_app_permissions.sql` (T3C-B0 phase 2: Super Admin role id `30000000-0000-0000-0000-000000000003`, `public.app_permissions`, `public.has_permission`). If `0004_app_permissions.sql` is missing, **stop and report**. If `0003_roles.sql` is missing, **stop and report**.
 5. Table pattern (`0001_init.sql`): `id uuid primary key default gen_random_uuid()`, `enable row level security`, `revoke all ... from anon, authenticated`, explicit `grant ... to authenticated`, then policies.
 6. `supabase/tests/database/` holds `rls.test.sql`, `seed.test.sql`, `todo_stats.test.sql` (and `roles.test.sql` and `companies.test.sql` once T3C-B0 and T3C-B7-S8 are implemented). `rls.test.sql` already asserts that every public table has RLS enabled.
 
@@ -316,6 +316,6 @@ As built, in order (the database types commit is shared, see T3C-B20):
 2. `d1154f3` `test(db): cover properties constraints and access`
    Files: `supabase/tests/database/properties.test.sql`
 3. `docs(plans): mark T3C-B21 plan implemented`
-   Files: `.claude/plans/backend/T3C-B21-Properties-Table.md`
+   Files: `.claude/plans/T3C-B21-Properties-Table.md`
 
 PR title: `feat(db): add properties table` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.

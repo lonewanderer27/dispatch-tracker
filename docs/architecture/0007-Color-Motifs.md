@@ -1,7 +1,7 @@
 # 0007 Color motifs: one palette for the pills of companies, cleaning types and statuses
 
 - Ticket: T3C-F35 (Phase 2)
-- Plan: `.claude/plans/backend/T3C-F35-Cleaning-Jobs-List.md`
+- Plan: `.claude/plans/T3C-F35-Cleaning-Jobs-List.md`
 - Date: 2026-11-27
 - Status: implemented
 - Builds on: [0004 Cleaning jobs list function](0004-Cleaning-Jobs-List-Function.md)
