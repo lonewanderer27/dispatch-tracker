@@ -443,20 +443,6 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
-                },"todos": {
-                  Row: {
-                    "created_at": string,"done": boolean,"id": string,"title": string,"user_id": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "created_at"?: string,"done"?: boolean,"id"?: string,"title": string,"user_id"?: string
-                  }
-                  Update: {
-                    "created_at"?: string,"done"?: boolean,"id"?: string,"title"?: string,"user_id"?: string
-                  }
-                  Relationships: [
-                    
-                  ]
                 }
           }
           Views: {
@@ -498,11 +484,6 @@ isOneToOne: false
                            },
 "is_valid_time_zone":
 { Args: { "tz": string }; Returns: boolean
-                           },
-"todo_stats":
-{ Args: Record<PropertyKey, never>; Returns: {
-              "done": number,"pct_done": number,"pending": number,"total": number
-            }[]
                            }
           }
           Enums: {
