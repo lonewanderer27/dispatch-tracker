@@ -55,3 +55,4 @@ The local stack needs Docker (`pnpm db:start`). `supabase/functions/.env` and `.
 - Stage explicit paths, never `git add -A` (untracked plan files of other tickets may sit in the working tree).
 - Commit or push only when asked.
 - PR: title in the same format (72 characters or fewer), body from `.github/pull_request_template.md` once one exists, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`. Merge with a normal merge commit; do not squash the commit list away.
+- PR description and screenshots are exported into the repo at `.claude/pr/<TICKET>-<Short-Name>/` (`pr-description.md` plus a `screenshots/` folder, with relative image links), never left in the scratchpad. They are not committed unless asked.
