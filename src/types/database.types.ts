@@ -71,30 +71,206 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
-                },"cleaning_statuses": {
+                },"cleaning_feedbacks": {
                   Row: {
-                    "id": string,"name": string
+                    "cleaning_job_id": string,"created_at": string,"feedback": string | null,"id": string,"rating": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "id"?: string,"name": string
+                    "cleaning_job_id": string,"created_at"?: string,"feedback"?: string | null,"id"?: string,"rating": number
                   }
                   Update: {
-                    "id"?: string,"name"?: string
+                    "cleaning_job_id"?: string,"created_at"?: string,"feedback"?: string | null,"id"?: string,"rating"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cleaning_feedbacks_cleaning_job_id_fkey"
+      columns: ["cleaning_job_id"]
+isOneToOne: false
+      referencedRelation: "cleaning_jobs"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"cleaning_job_areas": {
+                  Row: {
+                    "area_id": string,"cleaning_job_id": string,"description": string | null,"id": string,"priority": boolean
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "area_id": string,"cleaning_job_id": string,"description"?: string | null,"id"?: string,"priority"?: boolean
+                  }
+                  Update: {
+                    "area_id"?: string,"cleaning_job_id"?: string,"description"?: string | null,"id"?: string,"priority"?: boolean
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cleaning_job_areas_area_id_fkey"
+      columns: ["area_id"]
+isOneToOne: false
+      referencedRelation: "areas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cleaning_job_areas_cleaning_job_id_fkey"
+      columns: ["cleaning_job_id"]
+isOneToOne: false
+      referencedRelation: "cleaning_jobs"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"cleaning_job_assignments": {
+                  Row: {
+                    "cleaner_id": string,"cleaning_job_id": string,"id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cleaner_id": string,"cleaning_job_id": string,"id"?: string
+                  }
+                  Update: {
+                    "cleaner_id"?: string,"cleaning_job_id"?: string,"id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cleaning_job_assignments_cleaner_id_fkey"
+      columns: ["cleaner_id"]
+isOneToOne: false
+      referencedRelation: "cleaners"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cleaning_job_assignments_cleaning_job_id_fkey"
+      columns: ["cleaning_job_id"]
+isOneToOne: false
+      referencedRelation: "cleaning_jobs"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"cleaning_job_cleaning_types": {
+                  Row: {
+                    "cleaning_job_id": string,"cleaning_type_id": string,"id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cleaning_job_id": string,"cleaning_type_id": string,"id"?: string
+                  }
+                  Update: {
+                    "cleaning_job_id"?: string,"cleaning_type_id"?: string,"id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cleaning_job_cleaning_types_cleaning_job_id_fkey"
+      columns: ["cleaning_job_id"]
+isOneToOne: false
+      referencedRelation: "cleaning_jobs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cleaning_job_cleaning_types_cleaning_type_id_fkey"
+      columns: ["cleaning_type_id"]
+isOneToOne: false
+      referencedRelation: "cleaning_types"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"cleaning_job_items": {
+                  Row: {
+                    "cleaning_job_id": string,"description": string | null,"id": string,"item_id": string,"priority": boolean
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cleaning_job_id": string,"description"?: string | null,"id"?: string,"item_id": string,"priority"?: boolean
+                  }
+                  Update: {
+                    "cleaning_job_id"?: string,"description"?: string | null,"id"?: string,"item_id"?: string,"priority"?: boolean
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cleaning_job_items_cleaning_job_id_fkey"
+      columns: ["cleaning_job_id"]
+isOneToOne: false
+      referencedRelation: "cleaning_jobs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cleaning_job_items_item_id_fkey"
+      columns: ["item_id"]
+isOneToOne: false
+      referencedRelation: "items"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"cleaning_job_updates": {
+                  Row: {
+                    "cleaning_job_id": string,"created_at": string,"description": string,"id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cleaning_job_id": string,"created_at"?: string,"description": string,"id"?: string
+                  }
+                  Update: {
+                    "cleaning_job_id"?: string,"created_at"?: string,"description"?: string,"id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cleaning_job_updates_cleaning_job_id_fkey"
+      columns: ["cleaning_job_id"]
+isOneToOne: false
+      referencedRelation: "cleaning_jobs"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"cleaning_jobs": {
+                  Row: {
+                    "cleaners_needed": number,"cleaning_status_id": string,"client_id": string,"created_at": string,"description": string | null,"est_hours": number,"id": string,"pets": string | null,"property_id": string,"rate": number,"schedule": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cleaners_needed": number,"cleaning_status_id"?: string,"client_id": string,"created_at"?: string,"description"?: string | null,"est_hours": number,"id"?: string,"pets"?: string | null,"property_id": string,"rate": number,"schedule": string
+                  }
+                  Update: {
+                    "cleaners_needed"?: number,"cleaning_status_id"?: string,"client_id"?: string,"created_at"?: string,"description"?: string | null,"est_hours"?: number,"id"?: string,"pets"?: string | null,"property_id"?: string,"rate"?: number,"schedule"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cleaning_jobs_cleaning_status_id_fkey"
+      columns: ["cleaning_status_id"]
+isOneToOne: false
+      referencedRelation: "cleaning_statuses"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cleaning_jobs_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cleaning_jobs_property_id_fkey"
+      columns: ["property_id"]
+isOneToOne: false
+      referencedRelation: "properties"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"cleaning_statuses": {
+                  Row: {
+                    "color_motif": string,"id": string,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "color_motif"?: string,"id"?: string,"name": string
+                  }
+                  Update: {
+                    "color_motif"?: string,"id"?: string,"name"?: string
                   }
                   Relationships: [
                     
                   ]
                 },"cleaning_types": {
                   Row: {
-                    "id": string,"name": string
+                    "color_motif": string,"id": string,"name": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "id"?: string,"name": string
+                    "color_motif"?: string,"id"?: string,"name": string
                   }
                   Update: {
-                    "id"?: string,"name"?: string
+                    "color_motif"?: string,"id"?: string,"name"?: string
                   }
                   Relationships: [
                     
@@ -121,14 +297,14 @@ isOneToOne: false
                   ]
                 },"companies": {
                   Row: {
-                    "id": string,"name": string
+                    "color_motif": string,"id": string,"name": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "id"?: string,"name": string
+                    "color_motif"?: string,"id"?: string,"name": string
                   }
                   Update: {
-                    "id"?: string,"name"?: string
+                    "color_motif"?: string,"id"?: string,"name"?: string
                   }
                   Relationships: [
                     
@@ -195,14 +371,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "created_at": string,"display_name": string,"id": string,"role_id": string
+                    "created_at": string,"display_name": string,"id": string,"preferred_time_zone": string,"role_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"display_name"?: string,"id": string,"role_id"?: string
+                    "created_at"?: string,"display_name"?: string,"id": string,"preferred_time_zone"?: string,"role_id"?: string
                   }
                   Update: {
-                    "created_at"?: string,"display_name"?: string,"id"?: string,"role_id"?: string
+                    "created_at"?: string,"display_name"?: string,"id"?: string,"preferred_time_zone"?: string,"role_id"?: string
                   }
                   Relationships: [
                     {
@@ -290,6 +466,27 @@ isOneToOne: false
             "admin_update_profile":
 { Args: { "p_display_name": string,"p_role_id": string,"p_user_id": string }; Returns: undefined
                            },
+"color_motifs":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"get_cleaners_for_cleaning_job_id":
+{ Args: { "p_cleaning_job_id": string }; Returns: {
+              "cleaner_id": string,"full_name": string
+            }[]
+                           },
+"get_cleaning_jobs":
+{ Args: { "p_cleaner_ids"?: (string)[],"p_cleaning_type_ids"?: (string)[],"p_client_ids"?: (string)[],"p_company_ids"?: (string)[],"p_date_from"?: string,"p_date_range"?: string,"p_date_to"?: string,"p_feedback_search"?: string,"p_page"?: number,"p_page_size"?: number,"p_ratings"?: (number)[],"p_sort_by"?: string,"p_sort_dir"?: string,"p_time_zone"?: string }; Returns: {
+              "address": string,"avg_rating": number,"cleaners": Json,"cleaning_types": Json,"client_id": string,"client_name": string,"company_color": string,"company_name": string,"description": string,"feedbacks": Json,"id": string,"rate": number,"schedule": string,"status_color": string,"status_name": string,"total_count": number
+            }[]
+                           },
+"get_client_feedbacks_for_cleaning_job_id":
+{ Args: { "p_cleaning_job_id": string }; Returns: {
+              "created_at": string,"feedback": string,"id": string,"rating": number
+            }[]
+                           },
+"get_complete_address_for_property_id":
+{ Args: { "p_property_id": string }; Returns: string
+                           },
 "has_permission":
 { Args: { "p_action": string,"p_resource": string }; Returns: boolean
                            },
@@ -298,6 +495,9 @@ isOneToOne: false
                            },
 "is_super_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"is_valid_time_zone":
+{ Args: { "tz": string }; Returns: boolean
                            },
 "todo_stats":
 { Args: Record<PropertyKey, never>; Returns: {

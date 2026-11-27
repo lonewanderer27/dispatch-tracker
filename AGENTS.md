@@ -25,7 +25,7 @@ The local stack needs Docker (`pnpm db:start`). `supabase/functions/.env` and `.
   - state the decisions already made; list open questions separately and say they do not block;
   - say what is out of scope;
   - tell the implementer to **stop and report** (not fix) when the code does not match the plan's Facts or a gate's Expect.
-- Follow the existing structure: `src/features/<feature>/` for data access and hooks, `src/pages/<resource>/` for pages, `src/providers/` for Refine providers. Use the generated `Tables<'...'>` types; never hand-edit `src/types/database.types.ts` (run `pnpm db:types`).
+- Follow the existing structure: `src/features/<feature>/` for data access and hooks, `src/pages/<resource>/` for pages, `src/components/<feature>/` for the other components of a feature, `src/providers/` for Refine providers. **A pages folder holds only the Create, Edit and List pages** of its resource; any other component (filter bars, modals, pickers) goes in `src/components/<feature>/`. Use the generated `Tables<'...'>` types; never hand-edit `src/types/database.types.ts` (run `pnpm db:types`).
 - Every new table gets RLS, explicit grants, policies that call `has_permission`, its own rows in `app_permissions`, and a pgTAP isolation test (see the README checklist).
 - Prettier and ESLint are the formatters; apply them only to files you touch (`pnpm format:check`), never reformat untouched files.
 - Update `README.md` when a script, the layout or a setup step changes. Edit `AGENTS.md` only when a convention or command changes.
@@ -49,7 +49,7 @@ The local stack needs Docker (`pnpm db:start`). `supabase/functions/.env` and `.
 - Branch `main`; work lands via feature branches and PRs. Branch from `main` as `feat/<TICKETS>-<Short-Name>` (or `fix/...`).
 - Commit subject: `type(scope): description`. Type and scope lowercase, one space after the colon, imperative description starting lowercase (proper nouns keep capitals), no trailing period, **72 characters or fewer**.
   - Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `build`.
-  - Scopes: `web` (`src/`), `db` (`supabase/migrations`, `seed.sql`, `supabase/tests`), `functions` (`supabase/functions/`), `e2e` (`e2e/`), `agents` (`AGENTS.md`), `plans` (`.claude/plans/`).
+  - Scopes: `web` (`src/`), `db` (`supabase/migrations`, `supabase/seeds/`, `supabase/tests`), `functions` (`supabase/functions/`), `e2e` (`e2e/`), `agents` (`AGENTS.md`), `plans` (`.claude/plans/`).
 - One concern per commit. Code and its tests go in separate commits (a small pair may be squashed). Never mix code from different phases in one commit. Every commit leaves the suites green: no red commit in history (amend before pushing, or add a `fix(...)` commit).
 - Body is optional, wrapped at 72, and says why. Footer `Refs: <TICKET>[, <TICKET>]`, then the `Co-Authored-By` line on agent commits.
 - Stage explicit paths, never `git add -A` (untracked plan files of other tickets may sit in the working tree).

@@ -3,7 +3,7 @@ import { mkdirSync } from 'node:fs'
 import { AUTH_FILE } from './constants'
 
 const USER_EMAIL = 'user@example.com'
-const USER_PASSWORD = 'user-password-123' // local seed only, see supabase/seed.sql
+const USER_PASSWORD = 'user-password-123' // local seed only, see supabase/seeds/01_users.sql
 
 setup('log in as seeded user and save storage state', async ({ page }) => {
   mkdirSync('e2e/.auth', { recursive: true })

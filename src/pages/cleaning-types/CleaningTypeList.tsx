@@ -1,6 +1,7 @@
 import { CreateButton, DeleteButton, EditButton, List, useTable } from '@refinedev/antd'
 import { Space, Table } from 'antd'
 import type { CleaningType } from '@/types/db'
+import { ColorMotifTag } from '@/components/color-motif/ColorMotifTag'
 
 export function CleaningTypeList() {
   const { tableProps } = useTable<CleaningType>({
@@ -11,7 +12,14 @@ export function CleaningTypeList() {
   return (
     <List headerButtons={() => <CreateButton />}>
       <Table {...tableProps} rowKey="id">
-        <Table.Column<CleaningType> dataIndex="name" title="Name" sorter />
+        <Table.Column<CleaningType>
+          dataIndex="name"
+          title="Name"
+          sorter
+          render={(name: string, record) => (
+            <ColorMotifTag motif={record.color_motif}>{name}</ColorMotifTag>
+          )}
+        />
         <Table.Column<CleaningType>
           title="Actions"
           render={(_, record) => (
