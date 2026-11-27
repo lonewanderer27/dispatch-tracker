@@ -132,6 +132,19 @@ test.describe('Cleaning Jobs', () => {
     await expect(dataRows(page)).toHaveCount(10)
   })
 
+  test('shows the first name of each assignee and the full name on hover', async ({ page }) => {
+    await signIn(page, 'user@example.com', 'user-password-123')
+    await openCleaningJobs(page)
+
+    const pill = dataRows(page).locator('td:first-child .ant-tag').first()
+    await expect(pill).toBeVisible()
+    const fullName = await pill.getAttribute('aria-label')
+    expect(fullName).toBeTruthy()
+    await expect(pill).toHaveText((fullName ?? '').split(' ')[0] ?? '')
+    await pill.hover()
+    await expect(page.getByRole('tooltip')).toHaveText(fullName ?? '')
+  })
+
   test('flips the Scheduled Date order on every click', async ({ page }) => {
     await signIn(page, 'user@example.com', 'user-password-123')
     await openCleaningJobs(page)

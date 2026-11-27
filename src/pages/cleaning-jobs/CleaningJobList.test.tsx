@@ -93,7 +93,8 @@ describe('CleaningJobList', () => {
   it('shows a job with its cleaners, types, date in the chosen zone and rate in CAD', () => {
     render(<CleaningJobList />)
     const row = screen.getByRole('row', { name: /Xavier Ashby/ })
-    expect(within(row).getByText('Zed Adams')).toBeInTheDocument()
+    expect(within(row).getByText('Zed')).toBeInTheDocument()
+    expect(within(row).queryByText('Zed Adams')).not.toBeInTheDocument()
     expect(within(row).getByText('Deep')).toBeInTheDocument()
     expect(within(row).getByText('Move-Out')).toBeInTheDocument()
     expect(within(row).getByText('The Tidy Team')).toBeInTheDocument()
@@ -133,6 +134,15 @@ describe('CleaningJobList', () => {
     expect(within(row).getByText('The Tidy Team')).not.toHaveClass('ant-tag-pink')
     expect(within(row).getByText('Booked')).toHaveClass('ant-tag-default')
     expect(within(row).getByText('Deep')).toHaveClass('ant-tag-default')
+  })
+
+  it('shows only the first name of a cleaner and the full name on hover', async () => {
+    render(<CleaningJobList />)
+    const row = screen.getByRole('row', { name: /Xavier Ashby/ })
+    const pill = within(row).getByText('Zed')
+    expect(pill).toHaveAccessibleName('Zed Adams')
+    await userEvent.hover(pill)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Zed Adams')
   })
 
   it('marks an unassigned job and a job without feedback', () => {
