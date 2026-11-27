@@ -1,7 +1,5 @@
 # T3C-B0 Add the roles table and link profiles to it
 
-> **Status: PENDING REVIEW.** Not approved for implementation until the owner removes this line.
->
 > **For the implementer:** follow the steps in order. Run every Gate command and compare its output with the Expect line. On any mismatch, or when the code does not match the Facts, **stop and report**; do not try to fix it. Do not `git add -A`, commit or push unless asked.
 
 ## Why
@@ -264,7 +262,7 @@ Find: `      .select('display_name, role')`
 Replace with: `      .select('display_name, roles(name)')`
 
 Find: `      role: profile?.role ?? 'user',`
-Replace with: `      role: profile?.roles?.name ?? 'User',`
+Replace with: `      role: profile?.roles.name ?? 'User',`
 
 **4e. `src/providers/authProvider.test.ts`.** Two edits.
 
@@ -486,7 +484,7 @@ pnpm test:db
 pnpm lint && pnpm typecheck && pnpm test
 ```
 
-**Expect:** all exit 0. A type error on `profile?.roles?.name` means the types were not regenerated: run `pnpm db:types` and repeat; if it persists, stop and report.
+**Expect:** all exit 0. A type error on `profile?.roles.name` means the types were not regenerated: run `pnpm db:types` and repeat; if it persists, stop and report.
 
 ```bash
 pnpm exec prettier --check README.md src/providers/authProvider.ts src/providers/authProvider.test.ts .claude/plans/backend/T3C-B0-Users-Table.md
