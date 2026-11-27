@@ -65,7 +65,7 @@ supabase/
   migrations/0006_companies.sql  companies (brands), role-based RLS
   migrations/0007_clients.sql  clients (each booked against a company), role-based RLS
   migrations/0008_contacts.sql contacts (name and number per client), role-based RLS
-  seeds/                       local dev data, loaded in order by db:reset: 01_users, 02_reference_data, 03_roster, 04_cleaning_jobs (anonymised demo jobs)
+  seeds/                       local dev data, loaded in order by db:reset: 01_users, 02_reference_data, 03_roster, 04_cleaning_jobs (anonymised demo jobs), 05_cleaning_job_areas_items
   functions/exchange-rate/     edge function + Deno tests
   tests/database/              pgTAP tests
 src/

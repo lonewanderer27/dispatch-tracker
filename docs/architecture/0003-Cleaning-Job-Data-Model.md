@@ -1,7 +1,7 @@
 # 0003 Cleaning job data model
 
-- Ticket: T3C-B15, T3C-B16, T3C-B18, T3C-B19, T3C-B33
-- Plans: `.claude/plans/backend/T3C-B15-Cleaning-Jobs-Table.md`, `T3C-B16-Cleaning-Job-Updates-Table.md`, `T3C-B18-Cleaning-Job-Assignments-Table.md`, `T3C-B19-Cleaning-Feedbacks-Table.md`, `T3C-B33-Cleaning-Job-Cleaning-Types-Table.md`
+- Ticket: T3C-B15, T3C-B16, T3C-B18, T3C-B19, T3C-B26, T3C-B27, T3C-B33
+- Plans: `.claude/plans/backend/T3C-B15-Cleaning-Jobs-Table.md`, `T3C-B16-Cleaning-Job-Updates-Table.md`, `T3C-B18-Cleaning-Job-Assignments-Table.md`, `T3C-B19-Cleaning-Feedbacks-Table.md`, `T3C-B26-Cleaning-Job-Areas-Table.md`, `T3C-B27-Cleaning-Job-Items-Table.md`, `T3C-B33-Cleaning-Job-Cleaning-Types-Table.md`
 - Date: 2026-11-27
 - Status: implemented
 - Builds on: [0001 Role-based access](0001-Role-Based-Access.md)
@@ -21,14 +21,15 @@ tables, so a job can have several cleaners, several cleaning types and several f
   `cleaning_job_cleaning_types` (a job can be Deep and Move-Out) and `cleaning_feedbacks` (rating 0 to 5
   and optional text, more than one per job allowed). `cleaning_feedbacks` and `cleaning_job_updates` also
   have `created_at`.
-- Assignments and cleaning types are unique per pair (job and cleaner, job and type).
-- Deleting a job deletes its updates, assignments, types and feedbacks (`on delete cascade`). A client,
-  property, status, cleaner or cleaning type that is in use cannot be deleted (`no action`).
+- `cleaning_job_areas` and `cleaning_job_items` list the areas and items a job covers, each with a `priority` flag (default false) and an optional `description`.
+- Assignments, cleaning types, areas and items are unique per pair (job and cleaner, type, area or item).
+- Deleting a job deletes its updates, assignments, types, areas, items and feedbacks (`on delete cascade`). A client,
+  property, status, cleaner, cleaning type, area or item that is in use cannot be deleted (`no action`).
 - Access follows 0001: every table has RLS, four policies that call `has_permission`, and rows in
   `app_permissions` (Admin and Super Admin read and write, User reads only).
 - `created_at` on jobs and feedbacks was added at the owner's request; it is what orders feedback
   (newest first).
-- Migration numbers: the job tables are `0022` to `0026`, not `0013` to `0017` as first planned,
+- Migration numbers: the job tables are `0022` to `0026`, plus `0031` and `0032` for areas and items, not `0013` to `0017` as first planned,
   because `cleaning_jobs.property_id` needs `properties` (`0019`) to exist first. The later table plans
   were renumbered to follow.
 
