@@ -217,6 +217,25 @@ describe('CleaningJobList', () => {
     expect(lastQuery()).toMatchObject({ sortBy: 'schedule', sortDir: 'desc' })
   })
 
+  it('flips the Scheduled Date order on every click, starting from newest first', async () => {
+    render(<CleaningJobList />)
+    const header = screen.getByRole('columnheader', { name: 'Scheduled Date' })
+    await userEvent.click(header)
+    expect(lastQuery()).toMatchObject({ sortBy: 'schedule', sortDir: 'asc', page: 1 })
+    await userEvent.click(header)
+    expect(lastQuery()).toMatchObject({ sortBy: 'schedule', sortDir: 'desc', page: 1 })
+    await userEvent.click(header)
+    expect(lastQuery()).toMatchObject({ sortBy: 'schedule', sortDir: 'asc', page: 1 })
+  })
+
+  it('returns to newest first when another sort is switched back to Scheduled Date', async () => {
+    render(<CleaningJobList />)
+    await userEvent.click(screen.getByRole('columnheader', { name: 'Client Name' }))
+    expect(lastQuery()).toMatchObject({ sortBy: 'client', sortDir: 'asc' })
+    await userEvent.click(screen.getByRole('columnheader', { name: 'Scheduled Date' }))
+    expect(lastQuery()).toMatchObject({ sortBy: 'schedule', sortDir: 'desc' })
+  })
+
   it('does not offer sorting on feedback', () => {
     render(<CleaningJobList />)
     expect(screen.getByRole('columnheader', { name: 'Feedback' })).not.toHaveClass(

@@ -141,6 +141,9 @@ export function CleaningJobList() {
           title="Scheduled Date"
           dataIndex="schedule"
           sorter
+          // The list starts newest first, so a click must go to oldest first, and switching to this
+          // column from another one starts newest first. The default order of the cycle is ascending.
+          sortDirections={['descend', 'ascend']}
           sortOrder={sortOrderFor('schedule')}
           render={(value: string) => formatSchedule(value, timeZone)}
         />
