@@ -1,5 +1,6 @@
 -- Local development seed. Test users only. NEVER run against a hosted project.
--- Passwords: admin@example.com / admin-password-123 , user@example.com / user-password-123
+-- Passwords: admin@example.com / admin-password-123 , user@example.com / user-password-123 ,
+-- superadmin@example.com / superadmin-password-123
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -23,6 +24,15 @@ insert into auth.users (
     '{"provider":"email","providers":["email"]}',
     '{"display_name":"Local User"}',
     now(), now(), '', '', '', ''
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    '33333333-3333-3333-3333-333333333333',
+    'authenticated', 'authenticated', 'superadmin@example.com',
+    extensions.crypt('superadmin-password-123', extensions.gen_salt('bf')), now(),
+    '{"provider":"email","providers":["email"]}',
+    '{"display_name":"Local Super Admin"}',
+    now(), now(), '', '', '', ''
   );
 
 insert into auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
@@ -32,10 +42,14 @@ values
    '11111111-1111-1111-1111-111111111111', now(), now(), now()),
   (gen_random_uuid(), '22222222-2222-2222-2222-222222222222',
    '{"sub":"22222222-2222-2222-2222-222222222222","email":"user@example.com"}', 'email',
-   '22222222-2222-2222-2222-222222222222', now(), now(), now());
+   '22222222-2222-2222-2222-222222222222', now(), now(), now()),
+  (gen_random_uuid(), '33333333-3333-3333-3333-333333333333',
+   '{"sub":"33333333-3333-3333-3333-333333333333","email":"superadmin@example.com"}', 'email',
+   '33333333-3333-3333-3333-333333333333', now(), now(), now());
 
--- The trigger created both profiles. Promote the admin.
+-- The trigger created the profiles. Promote the admin and the super admin.
 update public.profiles set role_id = '30000000-0000-0000-0000-000000000001' where id = '11111111-1111-1111-1111-111111111111';
+update public.profiles set role_id = '30000000-0000-0000-0000-000000000003' where id = '33333333-3333-3333-3333-333333333333';
 
 insert into public.todos (user_id, title, done) values
   ('22222222-2222-2222-2222-222222222222', 'Buy milk', true),

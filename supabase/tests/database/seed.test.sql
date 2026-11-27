@@ -1,7 +1,7 @@
 -- pgTAP: the local seed produces the expected test users and roles.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(3);
+select plan(4);
 
 select is(
   (select count(*) from public.profiles where id in (
@@ -22,6 +22,13 @@ select is(
   (select count(*) from public.todos where user_id = '22222222-2222-2222-2222-222222222222'),
   3::bigint,
   'seeded normal user has 3 todos'
+);
+
+select is(
+  (select r.name from public.profiles p join public.roles r on r.id = p.role_id
+     where p.id = '33333333-3333-3333-3333-333333333333'),
+  'Super Admin',
+  'seeded super admin has the Super Admin role'
 );
 
 select * from finish();

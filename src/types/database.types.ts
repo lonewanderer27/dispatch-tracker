@@ -23,7 +23,27 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "profiles": {
+            "app_permissions": {
+                  Row: {
+                    "create": boolean,"delete": boolean,"read": boolean,"resource": string,"role_id": string,"update": boolean
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "create"?: boolean,"delete"?: boolean,"read"?: boolean,"resource": string,"role_id": string,"update"?: boolean
+                  }
+                  Update: {
+                    "create"?: boolean,"delete"?: boolean,"read"?: boolean,"resource"?: string,"role_id"?: string,"update"?: boolean
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "app_permissions_role_id_fkey"
+      columns: ["role_id"]
+isOneToOne: false
+      referencedRelation: "roles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profiles": {
                   Row: {
                     "created_at": string,"display_name": string,"id": string,"role_id": string
                   }
@@ -77,7 +97,10 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "is_admin":
+            "has_permission":
+{ Args: { "p_action": string,"p_resource": string }; Returns: boolean
+                           },
+"is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "todo_stats":

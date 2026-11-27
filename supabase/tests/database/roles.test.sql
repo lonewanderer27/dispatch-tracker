@@ -5,7 +5,7 @@ create extension if not exists pgtap with schema extensions;
 select plan(22);
 
 -- Fixed test identities. The whole file runs in one transaction and rolls back.
--- Alice is a normal user. Carol is promoted to Admin below.
+-- Alice is a normal user. Carol is promoted to Super Admin below (only a Super Admin writes roles).
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
   confirmation_token, email_change, email_change_token_new, recovery_token)
@@ -15,7 +15,7 @@ values
   ('cccccccc-0000-0000-0000-00000000000c', '00000000-0000-0000-0000-000000000000',
    'authenticated', 'authenticated', 'carol@test.local', '', '{}', '{}', now(), now(), '', '', '', '');
 
-update public.profiles set role_id = '30000000-0000-0000-0000-000000000001'
+update public.profiles set role_id = '30000000-0000-0000-0000-000000000003'
   where id = 'cccccccc-0000-0000-0000-00000000000c';
 
 -- 1-2: RLS is on; anon is denied.
@@ -35,8 +35,8 @@ reset role;
 -- 3-4: exactly the two roles, with their fixed ids.
 select set_eq(
   $$select name from public.roles$$,
-  $$values ('Admin'), ('User')$$,
-  'the migration creates exactly the Admin and User roles'
+  $$values ('Admin'), ('User'), ('Super Admin')$$,
+  'the migrations create exactly the Admin, User and Super Admin roles'
 );
 select is(
   (select count(*) from public.roles where id in
@@ -96,16 +96,16 @@ select throws_ok(
   'role name cannot be blank'
 );
 
--- Act as Carol (Admin role).
+-- Act as Carol (Super Admin role).
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"cccccccc-0000-0000-0000-00000000000c","role":"authenticated"}', true);
 select set_config('request.jwt.claim.sub', 'cccccccc-0000-0000-0000-00000000000c', true);
 
--- 13-14: an Admin is recognised and can write.
-select is(public.is_admin(), true, 'is_admin() is true for a profile with the Admin role');
+-- 13-14: a Super Admin is recognised and can write.
+select is(public.is_admin(), true, 'is_admin() is true for a profile with the Super Admin role');
 select lives_ok(
   $$insert into public.roles (name) values ('Test Role')$$,
-  'an Admin can insert a role'
+  'a Super Admin can insert a role'
 );
 reset role;
 
