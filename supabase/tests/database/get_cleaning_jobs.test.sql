@@ -2,6 +2,10 @@
 -- Run with: pnpm test:db   (supabase test db)
 begin;
 create extension if not exists pgtap with schema extensions;
+
+-- The local seed (04_cleaning_jobs.sql) adds demo rows; remove them inside this transaction (it rolls back) so the exact counts below hold.
+delete from public.cleaning_jobs where id::text like 'e3000000%';
+delete from public.properties where id::text like 'e2000000%';
 select plan(19);
 
 -- Fixed test identity. The whole file runs in one transaction and rolls back.
