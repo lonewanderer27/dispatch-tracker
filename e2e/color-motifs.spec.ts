@@ -80,4 +80,28 @@ test.describe('Color motifs', () => {
       await expect(typePill(page, TYPE)).toHaveClass(SEEDED_CLASS)
     }
   })
+
+  test('the Clients and Company cleaners lists show companies as coloured pills', async ({
+    page,
+  }) => {
+    await signIn(page, 'user@example.com', 'user-password-123')
+
+    // The seed puts Sam Newbie under The Tidy Team, which is red. The seed has hundreds of clients,
+    // so open the list with a page size that holds them all.
+    await page.goto('/clients?current=1&pageSize=1000')
+    const client = page.getByRole('row', { name: /Sam Newbie/ })
+    await expect(client.locator('.ant-tag', { hasText: /^The Tidy Team$/ })).toHaveClass(
+      /ant-tag-red/,
+    )
+
+    // Every seeded cleaner works for The Tidy Team (red) and Total Home Care (cyan).
+    await page.goto('/company-cleaners')
+    const cleaner = page.locator('tbody tr.ant-table-row').first()
+    await expect(cleaner.locator('.ant-tag', { hasText: /^The Tidy Team$/ })).toHaveClass(
+      /ant-tag-red/,
+    )
+    await expect(cleaner.locator('.ant-tag', { hasText: /^Total Home Care$/ })).toHaveClass(
+      /ant-tag-cyan/,
+    )
+  })
 })
