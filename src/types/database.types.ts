@@ -97,10 +97,16 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "has_permission":
+            "admin_update_profile":
+{ Args: { "p_display_name": string,"p_role_id": string,"p_user_id": string }; Returns: undefined
+                           },
+"has_permission":
 { Args: { "p_action": string,"p_resource": string }; Returns: boolean
                            },
 "is_admin":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"is_super_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "todo_stats":
