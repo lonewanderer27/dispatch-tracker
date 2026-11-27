@@ -25,10 +25,13 @@ pnpm dev                      # http://127.0.0.1:5173
 
 Seeded local accounts (local only, never on a hosted project):
 
-| Email               | Password             | Role  |
-| ------------------- | -------------------- | ----- |
-| `admin@example.com` | `admin-password-123` | Admin |
-| `user@example.com`  | `user-password-123`  | User  |
+| Email                    | Password                  | Role        |
+| ------------------------ | ------------------------- | ----------- |
+| `admin@example.com`      | `admin-password-123`      | Admin       |
+| `user@example.com`       | `user-password-123`       | User        |
+| `superadmin@example.com` | `superadmin-password-123` | Super Admin |
+
+Architecture changes are documented, one numbered file each, in [docs/architecture](docs/architecture). Access control: [0001 Role-based access](docs/architecture/0001-Role-Based-Access.md).
 
 ## Scripts
 
@@ -57,6 +60,7 @@ supabase/
   migrations/0001_init.sql     profiles, todos, RLS, realtime
   migrations/0002_todo_stats.sql
   migrations/0003_roles.sql      roles (Admin, User), profiles.role_id
+  migrations/0004_app_permissions.sql  Super Admin role, app_permissions, has_permission()
   seed.sql                     local test users and todos
   functions/exchange-rate/     edge function + Deno tests
   tests/database/              pgTAP tests
@@ -72,7 +76,7 @@ e2e/                           Playwright specs and the Frankfurter stub
 ## How to add a new table
 
 1. Migration: `supabase migration new add_<table>` and write the `create table`.
-2. RLS: enable RLS on the table, then add explicit `grant`s and policies. Anon gets nothing by default.
+2. RLS: enable RLS on the table, then add explicit `grant`s and policies. Anon gets nothing by default. Policies call `has_permission('<table>', '<action>')`, and the same migration inserts the table's rows in `app_permissions` (Admin and Super Admin read and write, User reads only). `rbac.test.sql` fails if a table has no row for a role.
 3. pgTAP: add a test under `supabase/tests/database/` that proves isolation (user A cannot read or write user B's rows).
 4. Types: `pnpm db:reset`, which regenerates `src/types/database.types.ts`.
 5. Resource: add a `ResourceProps` entry in `src/App.tsx`, then pages under `src/pages/<table>/` using `useTable`, `useForm` and `useShow` with `Tables<'<table>'>`.
@@ -89,5 +93,5 @@ e2e/                           Playwright specs and the Frankfurter stub
 
 - `todo_stats` is `security invoker`. Switching it to `security definer` would bypass RLS. The pgTAP isolation test guards against that.
 - Admins have an RLS override on `todos`, so for an admin `todo_stats` counts every user's todos, not only their own.
-- Users can update only `profiles.display_name`. `role_id` (Admin or User, from the `roles` table) is column-protected and can only be changed with direct DB access. Admins can read and write the dispatch tables; Users can only read them. Anonymous sign-in is off.
+- Users can update only `profiles.display_name`. `role_id` (Admin or User, from the `roles` table) is column-protected and can only be changed with direct DB access. Admins can read and write the dispatch tables; Users can only read them. Roles are Admin, User and Super Admin. The `app_permissions` table lists what each role may do per table (read, create, update, delete). Admin can modify every dispatch table but not `roles` or `app_permissions`; only Super Admin can modify those two. Anonymous sign-in is off.
 - The edge function runs in Docker. For offline e2e, `EXCHANGE_API_URL` points it at the stub; see `supabase/functions/.env.example`.
