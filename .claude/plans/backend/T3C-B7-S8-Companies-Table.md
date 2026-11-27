@@ -13,8 +13,8 @@ Source: sprint sheet `The Tidy Team - Digital Platforms Sprint - Sprint 2_ Nov-2
 
 ## Facts (verified 2026-11-27)
 
-1. Branch is `main`, working tree clean. Migrations in `supabase/migrations/`: `0001_init.sql`, `0002_todo_stats.sql`, and `0003_roles.sql` from T3C-B0 (`.claude/plans/backend/T3C-B0-Users-Table.md`, must be implemented first; if it is missing, **stop and report**). They are numbered `NNNN_name.sql`, not timestamped. The next file is `0004_companies.sql`.
-2. `public.is_admin()` exists (`0001_init.sql`, redefined in `0003_roles.sql` to test `profiles.role_id` against the Admin role id `30000000-0000-0000-0000-000000000001`; `security definer`, executable by `authenticated` only). Policies call it as `(select public.is_admin())`. The User role id is `30000000-0000-0000-0000-000000000002`.
+1. Branch is `main`, working tree clean. Migrations in `supabase/migrations/`: `0001_init.sql`, `0002_todo_stats.sql`, `0003_roles.sql` and `0004_app_permissions.sql` from T3C-B0 (`.claude/plans/backend/T3C-B0-Users-Table.md`, must be implemented first; if it is missing, **stop and report**). They are numbered `NNNN_name.sql`, not timestamped. The next file is `0005_companies.sql`.
+2. `public.is_admin()` exists (`0001_init.sql`, redefined in `0003_roles.sql` to test `profiles.role_id` against the Admin role id `30000000-0000-0000-0000-000000000001`; `security definer`, executable by `authenticated` only). Policies of this table do not use it; they call `(select public.has_permission('<table>', '<action>'))`, which needs `0004_app_permissions.sql` (T3C-B0 phase 2: Super Admin role id `30000000-0000-0000-0000-000000000003`, `public.app_permissions`, `public.has_permission`). If `0004_app_permissions.sql` is missing, **stop and report**. The User role id is `30000000-0000-0000-0000-000000000002`.
 3. Table pattern in `0001_init.sql`: `id uuid primary key default gen_random_uuid()`, `alter table ... enable row level security`, `revoke all on public.<t> from anon, authenticated`, then explicit `grant ... to authenticated`, then policies.
 4. `supabase/seed.sql` is 44 lines. Lines 1-2 are the header:
    `-- Local development seed. Test users only. NEVER run against a hosted project.`
@@ -25,13 +25,13 @@ Source: sprint sheet `The Tidy Team - Digital Platforms Sprint - Sprint 2_ Nov-2
 7. `src/App.tsx`: line 9 `import { DashboardOutlined, CheckSquareOutlined } from '@ant-design/icons'`; line 18 `import { TodoShow } from '@/pages/todos/TodoShow'`; the `todos` resource is the last entry of `resources` (lines 26-33); the `todos` routes are lines 66-71.
 8. `src/pages/` has `dashboard` and `todos` only. `src/types/database.types.ts` has no `companies` yet (0 matches). It is generated; never hand-edit it.
 9. `.prettierrc.json`: no semicolons, single quotes, trailing commas, width 100. `src/types/database.types.ts` is in `.prettierignore`.
-10. `README.md` Layout block: line 55 `migrations/0001_init.sql ...`, line 56 `migrations/0002_todo_stats.sql`, then the line `migrations/0003_roles.sql ...` added by T3C-B0, line 58 `seed.sql                     local test users and todos`, line 65 `pages/dashboard, pages/todos`.
+10. `README.md` Layout block: line 55 `migrations/0001_init.sql ...`, line 56 `migrations/0002_todo_stats.sql`, then the lines `migrations/0003_roles.sql ...` and `migrations/0004_app_permissions.sql ...` added by T3C-B0, line 58 `seed.sql                     local test users and todos`, line 65 `pages/dashboard, pages/todos`.
 
 ## Decisions already made (do not reopen)
 
 - **Columns are exactly `id` and `name`**, as the story says. No `created_at`. `id` is `uuid default gen_random_uuid()`, like `todos`.
 - **`name`**: `text not null`, `check (char_length(trim(name)) between 1 and 200)` (same shape as `todos.title`, rejects blank names), `unique`. Uniqueness is exact (case-sensitive).
-- **Access (owner rule)**: a profile with the Admin role can read and write companies; a profile with the User role can only read. Implemented as a select policy for every signed-in user plus an admin-only `for all` policy using `is_admin()`. `anon` gets nothing.
+- **Access (owner rule)**: a profile with the Admin role can read and write companies; a profile with the User role can only read. Implemented as four policies (select, insert, update, delete) that call `has_permission(<table>, <action>)`, plus the table's three rows in `app_permissions` (Admin and Super Admin read and write, User reads only), seeded in the same migration. `anon` gets nothing.
 - **Deleting a company** that other tables point at will be blocked by those tables' foreign keys (default `no action`). Nothing to do here.
 - **Seed lives in `supabase/seed.sql`** with `on conflict (name) do nothing`, which gives "run twice, no duplicates". Do not put the companies in a migration.
 - **No realtime** for this table (not added to `supabase_realtime`).
@@ -70,10 +70,10 @@ git status --short && git switch -c feat/T3C-B7-S8-Companies-Table && pnpm db:st
 
 #### Step 1. Migration (create file)
 
-Create `supabase/migrations/0004_companies.sql` with exactly this content:
+Create `supabase/migrations/0005_companies.sql` with exactly this content:
 
 ```sql
--- 0004_companies: the companies (brands) we operate under. Shared reference data.
+-- 0005_companies: the companies (brands) we operate under. Shared reference data.
 
 create table public.companies (
   id   uuid primary key default gen_random_uuid(),
@@ -87,16 +87,29 @@ alter table public.companies enable row level security;
 revoke all on public.companies from anon, authenticated;
 grant select, insert, update, delete on public.companies to authenticated;
 
--- Everyone signed in can read the list of companies.
-create policy companies_select_authenticated
+-- Access comes from app_permissions (T3C-B0 phase 2): one policy per action.
+create policy companies_select
   on public.companies for select to authenticated
-  using (true);
+  using ((select public.has_permission('companies', 'read')));
 
--- Only admins can change it.
-create policy companies_admin_all
-  on public.companies for all to authenticated
-  using ((select public.is_admin()))
-  with check ((select public.is_admin()));
+create policy companies_insert
+  on public.companies for insert to authenticated
+  with check ((select public.has_permission('companies', 'create')));
+
+create policy companies_update
+  on public.companies for update to authenticated
+  using ((select public.has_permission('companies', 'update')))
+  with check ((select public.has_permission('companies', 'update')));
+
+create policy companies_delete
+  on public.companies for delete to authenticated
+  using ((select public.has_permission('companies', 'delete')));
+
+-- Permission matrix for this table: Admin and Super Admin read and write, User reads only.
+insert into public.app_permissions (role_id, resource, "read", "create", "update", "delete") values
+  ('30000000-0000-0000-0000-000000000001', 'companies', true, true,  true,  true),
+  ('30000000-0000-0000-0000-000000000002', 'companies', true, false, false, false),
+  ('30000000-0000-0000-0000-000000000003', 'companies', true, true,  true,  true);
 ```
 
 #### Step 2. Seed (edit `supabase/seed.sql`)
@@ -127,7 +140,7 @@ on conflict (name) do nothing;
 ```
 
 **Gate:** `pnpm db:reset`
-**Expect:** exits 0 with no SQL error, the migrations list ends with `0004_companies.sql`, and the seed runs. Then `grep -c "companies" src/types/database.types.ts` prints a number greater than `0` (types were regenerated).
+**Expect:** exits 0 with no SQL error, the migrations list ends with `0005_companies.sql`, and the seed runs. Then `grep -c "companies" src/types/database.types.ts` prints a number greater than `0` (types were regenerated).
 
 #### Step 3. pgTAP: new test file (create)
 
@@ -493,12 +506,12 @@ Replace with:
 
 #### Step 8. README (edit `README.md`)
 
-Edit A. Find: `  migrations/0003_roles.sql      roles (Admin, User), profiles.role_id`
+Edit A. Find: `  migrations/0004_app_permissions.sql  Super Admin role, app_permissions, has_permission()`
 Replace with:
 
 ```
-  migrations/0003_roles.sql      roles (Admin, User), profiles.role_id
-  migrations/0004_companies.sql  companies (brands), admin-write RLS
+  migrations/0004_app_permissions.sql  Super Admin role, app_permissions, has_permission()
+  migrations/0005_companies.sql  companies (brands), role-based RLS
 ```
 
 Edit B. Find: `  seed.sql                     local test users and todos`
@@ -516,15 +529,15 @@ Replace with: `  pages/dashboard, pages/todos, pages/companies`
 pnpm test:all
 ```
 
-**Expect:** lint, typecheck, vitest, pgTAP, Deno and Playwright all pass, exit 0. Then `git status --short` lists only: the plan file, `supabase/migrations/0004_companies.sql`, `supabase/seed.sql`, `supabase/tests/database/companies.test.sql`, `supabase/tests/database/seed.test.sql`, `src/types/database.types.ts`, `src/types/db.ts`, `src/App.tsx`, `src/pages/companies/` (3 files), `README.md`. Anything else: stop and report.
+**Expect:** lint, typecheck, vitest, pgTAP, Deno and Playwright all pass, exit 0. Then `git status --short` lists only: the plan file, `supabase/migrations/0005_companies.sql`, `supabase/seed.sql`, `supabase/tests/database/companies.test.sql`, `supabase/tests/database/seed.test.sql`, `src/types/database.types.ts`, `src/types/db.ts`, `src/App.tsx`, `src/pages/companies/` (3 files), `README.md`. Anything else: stop and report.
 
 ## Rollback
 
 Nothing is applied outside the local Docker database, so:
 
-- Before commit: `git switch main && git branch -D feat/T3C-B7-S8-Companies-Table`, then `pnpm db:reset` (rebuilds the local DB without `0004`).
+- Before commit: `git switch main && git branch -D feat/T3C-B7-S8-Companies-Table`, then `pnpm db:reset` (rebuilds the local DB without `0005`).
 - After commit, before merge: delete the branch and reset as above.
-- After merge, if a hosted DB already has `0004`: add a new migration `0005_drop_companies.sql` with `drop table public.companies;`. Never edit or delete an applied migration. (Stop and ask first if clients or other tables already reference `companies`.)
+- After merge, if a hosted DB already has `0005`: add a new migration `0006_drop_companies.sql` with `drop table public.companies;`. Never edit or delete an applied migration. (Stop and ask first if clients or other tables already reference `companies`.)
 
 ## Conventional commits
 
@@ -538,8 +551,8 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 (Use `Refs: T3C-B7` alone on commit 1, `Refs: T3C-S8` alone on commit 2.)
 
-1. `feat(db): add companies table with admin-write RLS`
-   Files: `supabase/migrations/0004_companies.sql`, `src/types/database.types.ts`
+1. `feat(db): add companies table with role-based RLS`
+   Files: `supabase/migrations/0005_companies.sql`, `src/types/database.types.ts`
    Body: shared reference data; everyone signed in reads, only admins write.
 2. `feat(db): seed the four companies`
    Files: `supabase/seed.sql`
