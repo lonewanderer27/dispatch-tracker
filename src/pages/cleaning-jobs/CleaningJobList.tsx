@@ -16,6 +16,7 @@ import type { CleaningJobListRow } from '@/types/db'
 import { CleaningJobFilterBar } from '@/components/cleaning-jobs/CleaningJobFilterBar'
 import { FeedbackModal } from '@/components/cleaning-jobs/FeedbackModal'
 import { TimeZonePicker } from '@/components/cleaning-jobs/TimeZonePicker'
+import { ColorMotifTag } from '@/components/color-motif/ColorMotifTag'
 
 const CAD = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' })
 const SORT_KEYS: readonly CleaningJobSortKey[] = ['schedule', 'client', 'cleaning_type', 'rating']
@@ -123,8 +124,18 @@ export function CleaningJobList() {
             )
           }
         />
-        <Table.Column<CleaningJobListRow> title="Company" dataIndex="company_name" />
-        <Table.Column<CleaningJobListRow> title="Status" dataIndex="status_name" />
+        <Table.Column<CleaningJobListRow>
+          title="Company"
+          render={(_, record) => (
+            <ColorMotifTag motif={record.company_color}>{record.company_name}</ColorMotifTag>
+          )}
+        />
+        <Table.Column<CleaningJobListRow>
+          title="Status"
+          render={(_, record) => (
+            <ColorMotifTag motif={record.status_color}>{record.status_name}</ColorMotifTag>
+          )}
+        />
         <Table.Column<CleaningJobListRow>
           key="schedule"
           title="Scheduled Date"
@@ -152,8 +163,10 @@ export function CleaningJobList() {
           sortOrder={sortOrderFor('cleaning_type')}
           render={(_, record) => (
             <Space wrap>
-              {record.cleaning_types.map((name) => (
-                <Tag key={name}>{name}</Tag>
+              {record.cleaning_types.map((type) => (
+                <ColorMotifTag key={type.name} motif={type.color}>
+                  {type.name}
+                </ColorMotifTag>
               ))}
             </Space>
           )}

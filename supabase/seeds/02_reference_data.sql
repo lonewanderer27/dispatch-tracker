@@ -1,32 +1,34 @@
 -- Local development seed 2 of 4: reference data (companies, cleaning types, statuses, property types,
 -- areas, items). Every block is safe to run more than once. NEVER run against a hosted project.
 
--- Reference data: the companies we operate under. Safe to run more than once.
-insert into public.companies (name) values
-  ('The Tidy Team'),
-  ('Total Home Care'),
-  ('Maids in Pink'),
-  ('Diamond MIP')
-on conflict (name) do nothing;
+-- Reference data: the companies we operate under, each with its pill colour (0029_color_motifs.sql).
+-- Safe to run more than once: a re-run resets the colours to these values.
+insert into public.companies (name, color_motif) values
+  ('The Tidy Team', 'red'),
+  ('Total Home Care', 'cyan'),
+  ('Maids in Pink', 'magenta'),
+  ('Diamond MIP', 'blue')
+on conflict (name) do update set color_motif = excluded.color_motif;
 
--- Reference data: cleaning types. Safe to run more than once.
-insert into public.cleaning_types (name) values
-  ('Regular'),
-  ('Deep'),
-  ('Move-In'),
-  ('Move-Out'),
-  ('Construction'),
-  ('1500+ Square Feet'),
-  ('Diamond Cleaning')
-on conflict (name) do nothing;
+-- Reference data: cleaning types, each with its pill colour. Safe to run more than once.
+insert into public.cleaning_types (name, color_motif) values
+  ('Regular', 'lime'),
+  ('Deep', 'purple'),
+  ('Move-In', 'cyan'),
+  ('Move-Out', 'orange'),
+  ('Construction', 'gold'),
+  ('1500+ Square Feet', 'geekblue'),
+  ('Diamond Cleaning', 'magenta')
+on conflict (name) do update set color_motif = excluded.color_motif;
 
--- Reference data: job statuses, in life-cycle order. Fixed ids: cleaning_jobs defaults to Booked.
-insert into public.cleaning_statuses (id, name) values
-  ('10000000-0000-0000-0000-000000000001', 'Booked'),
-  ('10000000-0000-0000-0000-000000000002', 'Confirmed'),
-  ('10000000-0000-0000-0000-000000000003', 'In Progress'),
-  ('10000000-0000-0000-0000-000000000004', 'Done')
-on conflict do nothing;
+-- Reference data: job statuses, in life-cycle order, coloured by life-cycle stage. Fixed ids:
+-- cleaning_jobs defaults to Booked. Safe to run more than once.
+insert into public.cleaning_statuses (id, name, color_motif) values
+  ('10000000-0000-0000-0000-000000000001', 'Booked', 'blue'),
+  ('10000000-0000-0000-0000-000000000002', 'Confirmed', 'cyan'),
+  ('10000000-0000-0000-0000-000000000003', 'In Progress', 'orange'),
+  ('10000000-0000-0000-0000-000000000004', 'Done', 'green')
+on conflict (id) do update set color_motif = excluded.color_motif;
 
 -- Reference data: property types (House and Townhouse are in use per The Tidy Team Schedule).
 -- Safe to run more than once.

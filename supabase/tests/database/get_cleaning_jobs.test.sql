@@ -6,7 +6,7 @@ create extension if not exists pgtap with schema extensions;
 -- The local seed (04_cleaning_jobs.sql) adds demo rows; remove them inside this transaction (it rolls back) so the exact counts below hold.
 delete from public.cleaning_jobs where id::text like 'e3000000%';
 delete from public.properties where id::text like 'e2000000%';
-select plan(19);
+select plan(20);
 
 -- Fixed test identity. The whole file runs in one transaction and rolls back.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
@@ -21,9 +21,11 @@ values
 --      feedback 5 "Great clean" and 3 "Missed oven"
 --   J2 2026-12-02 client Yara (Beta Co): cleaner Amy Brown, type Test Move-Out, feedback 5 "Good"
 --   J3 2026-12-03 client Xavier (Alpha Co): no cleaners, no types, no feedback
-insert into public.companies (id, name) values
-  ('c0000000-0000-0000-0000-000000000001', 'Alpha Co'),
-  ('c0000000-0000-0000-0000-000000000002', 'Beta Co');
+-- Colours (0029_color_motifs.sql): Alpha Co red, Beta Co default; Test Deep gold, Test Move-Out
+-- default; every job keeps the default status Booked (blue in the seed).
+insert into public.companies (id, name, color_motif) values
+  ('c0000000-0000-0000-0000-000000000001', 'Alpha Co', 'red'),
+  ('c0000000-0000-0000-0000-000000000002', 'Beta Co', 'default');
 insert into public.clients (id, company_id, name) values
   ('c1000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001', 'Xavier'),
   ('c1000000-0000-0000-0000-000000000002', 'c0000000-0000-0000-0000-000000000002', 'Yara');
@@ -42,9 +44,9 @@ insert into public.cleaning_job_assignments (cleaner_id, cleaning_job_id) values
   ('c2000000-0000-0000-0000-000000000001', 'c3000000-0000-0000-0000-000000000001'),
   ('c2000000-0000-0000-0000-000000000002', 'c3000000-0000-0000-0000-000000000001'),
   ('c2000000-0000-0000-0000-000000000002', 'c3000000-0000-0000-0000-000000000002');
-insert into public.cleaning_types (id, name) values
-  ('c4000000-0000-0000-0000-000000000001', 'Test Deep'),
-  ('c4000000-0000-0000-0000-000000000002', 'Test Move-Out');
+insert into public.cleaning_types (id, name, color_motif) values
+  ('c4000000-0000-0000-0000-000000000001', 'Test Deep', 'gold'),
+  ('c4000000-0000-0000-0000-000000000002', 'Test Move-Out', 'default');
 insert into public.cleaning_job_cleaning_types (cleaning_job_id, cleaning_type_id) values
   ('c3000000-0000-0000-0000-000000000001', 'c4000000-0000-0000-0000-000000000001'),
   ('c3000000-0000-0000-0000-000000000001', 'c4000000-0000-0000-0000-000000000002'),
@@ -169,10 +171,19 @@ select results_eq(
   $$select client_name, company_name, status_name, address, cleaners, cleaning_types, (select jsonb_agg(e - 'created_at') from jsonb_array_elements(feedbacks) e), avg_rating, rate from public.get_cleaning_jobs(p_client_ids => array['c1000000-0000-0000-0000-000000000001']::uuid[], p_ratings => array[3])$$,
   $$values ('Xavier', 'Alpha Co', 'Booked', '1 Test St, Edmonton, AB, T5J 0N3, CA',
     '[{"cleaner_id": "c2000000-0000-0000-0000-000000000002", "full_name": "Amy Brown"}, {"cleaner_id": "c2000000-0000-0000-0000-000000000001", "full_name": "Zed Adams"}]'::jsonb,
-    '["Test Deep", "Test Move-Out"]'::jsonb,
+    '[{"name": "Test Deep", "color": "gold"}, {"name": "Test Move-Out", "color": "default"}]'::jsonb,
     '[{"rating": 3, "feedback": "Missed oven"}, {"rating": 5, "feedback": "Great clean"}]'::jsonb,
     4.0::numeric, 50.00::numeric)$$,
   'a row carries every display column, with the feedback newest first'
+);
+
+select results_eq(
+  $$select id, company_color, status_color, cleaning_types from public.get_cleaning_jobs()$$,
+  $$values
+    ('c3000000-0000-0000-0000-000000000003'::uuid, 'red', 'blue', '[]'::jsonb),
+    ('c3000000-0000-0000-0000-000000000002'::uuid, 'default', 'blue', '[{"name": "Test Move-Out", "color": "default"}]'::jsonb),
+    ('c3000000-0000-0000-0000-000000000001'::uuid, 'red', 'blue', '[{"name": "Test Deep", "color": "gold"}, {"name": "Test Move-Out", "color": "default"}]'::jsonb)$$,
+  'each row carries the colour of its company, its status and each cleaning type'
 );
 reset role;
 

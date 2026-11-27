@@ -43,9 +43,14 @@ function job(overrides: Partial<CleaningJobListRow> = {}): CleaningJobListRow {
     client_id: 'c1',
     client_name: 'Xavier Ashby',
     company_name: 'The Tidy Team',
+    company_color: 'geekblue',
+    status_color: 'blue',
     address: '12 Maple Ridge Crescent, Edmonton, AB, T5J 0N3, CA',
     cleaners: [{ cleaner_id: 'k1', full_name: 'Zed Adams' }],
-    cleaning_types: ['Deep', 'Move-Out'],
+    cleaning_types: [
+      { name: 'Deep', color: 'purple' },
+      { name: 'Move-Out', color: 'orange' },
+    ],
     feedbacks: [],
     avg_rating: null,
     total_count: 1,
@@ -96,6 +101,38 @@ describe('CleaningJobList', () => {
     expect(within(row).getByText('Tue 1 Dec 2026, 9:00 AM')).toBeInTheDocument()
     expect(within(row).getByText('$150.00')).toBeInTheDocument()
     expect(within(row).getByText('6 hr deep clean: oven')).toBeInTheDocument()
+  })
+
+  it('shows Company, Status and each Cleaning Type as a pill in its colour, text kept', () => {
+    render(<CleaningJobList />)
+    const row = screen.getByRole('row', { name: /Xavier Ashby/ })
+    expect(within(row).getByText('The Tidy Team')).toHaveClass('ant-tag', 'ant-tag-geekblue')
+    expect(within(row).getByText('Booked')).toHaveClass('ant-tag', 'ant-tag-blue')
+    expect(within(row).getByText('Deep')).toHaveClass('ant-tag', 'ant-tag-purple')
+    expect(within(row).getByText('Move-Out')).toHaveClass('ant-tag', 'ant-tag-orange')
+  })
+
+  it('shows a colour the palette does not know as the grey default pill', () => {
+    useCleaningJobs.mockReturnValue({
+      data: {
+        rows: [
+          job({
+            company_color: 'pink',
+            status_color: 'default',
+            cleaning_types: [{ name: 'Deep', color: '#ff0000' }],
+          }),
+        ],
+        total: 1,
+      },
+      isFetching: false,
+      error: null,
+    })
+    render(<CleaningJobList />)
+    const row = screen.getByRole('row', { name: /Xavier Ashby/ })
+    expect(within(row).getByText('The Tidy Team')).toHaveClass('ant-tag-default')
+    expect(within(row).getByText('The Tidy Team')).not.toHaveClass('ant-tag-pink')
+    expect(within(row).getByText('Booked')).toHaveClass('ant-tag-default')
+    expect(within(row).getByText('Deep')).toHaveClass('ant-tag-default')
   })
 
   it('marks an unassigned job and a job without feedback', () => {

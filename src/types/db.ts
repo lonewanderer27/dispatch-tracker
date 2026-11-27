@@ -38,7 +38,8 @@ export type CleaningJobListRow = Omit<
 > & {
   avg_rating: number | null
   cleaners: { cleaner_id: string; full_name: string }[]
-  cleaning_types: string[]
+  // Each cleaning type's name and color_motif (0029_color_motifs.sql), ordered by name.
+  cleaning_types: { name: string; color: string }[]
   feedbacks: { rating: number; feedback: string | null; created_at: string }[]
 }
 export type CleanerWithCompanies = Cleaner & { company_cleaners: CleanerCompanyLink[] }
