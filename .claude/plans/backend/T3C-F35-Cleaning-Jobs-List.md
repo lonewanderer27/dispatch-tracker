@@ -1,8 +1,10 @@
-# T3C-F35 Cleaning Jobs list page, time zone setting and cleaning job functions
+# T3C-F35 Cleaning Jobs list page, time zone setting, cleaning job functions and pill colours
 
-> **Status: PENDING REVIEW.** Not approved for implementation until the owner removes this line.
+> **Status: Phase 1 (Steps 0 to 11 and 9a) approved and implemented** on `feat/T3C-B15-B16-B18-B19-B26-B27-B33-F35-Cleaning-Jobs` (commits `e96c7e1`, `1e55628`, `eafe582`, `d62a47e`; seed `6de699a`, `af712e8`; test fixes `15eee50`, `71a288d`; Step 9a tests `ab6d39b`, `3811b35`, `1da0136`; docs `3c306eb`). **Phase 2 (pill colours, Steps 12 to 23) is PENDING REVIEW** and not implemented: it is not approved until the owner removes this line.
 >
 > **For the implementer:** follow the steps in order. Run every Gate command and compare its output with the Expect line. On any mismatch, or when the code does not match the Facts, **stop and report**; do not try to fix it. Do not `git add -A`, commit or push unless asked.
+>
+> **Phases.** Phase 1 (Steps 0 to 11) builds the list, the time zone setting and the functions. Phase 2 (Steps 12 to 23, section "Phase 2" below) adds a colour to the Company, Status and Cleaning Type pills. Gate totals after Phase 1: pgTAP 27 files and 403 tests, Vitest 14 files and 108 tests, Playwright `e2e/cleaning-jobs.spec.ts` 5 tests plus the setup. After Phase 2: pgTAP 28 files and 429 tests, Vitest 19 files and 132 tests, Playwright 18 tests in all (`cleaning-jobs.spec.ts` 6, `color-motifs.spec.ts` 2).
 
 ## Why
 
@@ -25,6 +27,7 @@ Source: owner request in conversation (2026-11-27), not in the sprint sheet. Tic
   - `cleaning_jobs` and `cleaning_feedbacks` both get a `created_at timestamptz not null default now()` column (added to the T3C-B15 and T3C-B19 plans and migrations, not to this plan).
   - Every database function the web page calls has an equivalent React hook built on React Query (`useCleaningJobs`, `useCompleteAddress`, `useCleanersForCleaningJob`, `useClientFeedbacks`), so the requests are cached and shared. Components never call `supabase.rpc` or `useQuery` directly.
   - RPC function `get_cleaning_jobs` (added for performance, see "Performance") returns one filtered, sorted, counted page of the list in a single call (first drafted as `list_cleaning_jobs`; the owner renamed it on 2026-11-27).
+- Phase 2 (owner, 2026-11-27): companies, cleaning types and cleaning statuses get a `color_motif` column, and the Company, Status and Cleaning Type pills on the list show it. See "Phase 2" below.
 
 ## Performance
 
@@ -42,7 +45,7 @@ The server is small, so the page is designed to do little work per view:
 
 ## Facts (verified 2026-11-27)
 
-1. Branch is `main`. Migrations are numbered `NNNN_name.sql`. This plan adds `supabase/migrations/0027_profiles_preferred_time_zone.sql` and `supabase/migrations/0028_cleaning_job_rpc.sql`, so migrations up to `0026` must already exist. The later table plans (T3C-B17, B26, B27, B28-29, B30, S31, B32) were renumbered to `0029` to `0034` to follow this plan.
+1. Branch is `main`. Migrations are numbered `NNNN_name.sql`. This plan adds `supabase/migrations/0027_profiles_preferred_time_zone.sql` and `supabase/migrations/0028_cleaning_job_rpc.sql`, so migrations up to `0026` must already exist. The later table plans (T3C-B17, B26, B27, B28-29, B30, S31, B32) were renumbered to `0029` to `0034` to follow this plan, then shifted again to `0030` to `0035` because Phase 2 takes `0029`.
 2. Required earlier migrations (plan that creates each): `0001_init.sql` (profiles); `0003_roles.sql` and `0004_app_permissions.sql` (T3C-B0); `0006_companies.sql` (T3C-B7-S8); `0007_clients.sql` (T3C-B6); `0009_cleaners.sql` (T3C-B9); `0011_cleaning_types.sql` and `0012_cleaning_statuses.sql` (T3C-B11-S12, T3C-B13-S14); `0019_properties.sql` (T3C-B21); `0022_cleaning_jobs.sql` (T3C-B15, with `created_at`); `0024_cleaning_job_assignments.sql` (T3C-B18); `0025_cleaning_feedbacks.sql` (T3C-B19; it must include `created_at`, see the T3C-B19 plan); `0026_cleaning_job_cleaning_types.sql` (T3C-B33). If any is missing, **stop and report**.
 3. `public.profiles` (`0001_init.sql`) has `id`, `display_name`, `created_at` and `role_id` (from `0003`). Users can only update the columns they are granted: `grant update (display_name) on public.profiles to authenticated`. The policies `profiles_select_own` and `profiles_update_own` limit a user to their own row. `grant select on public.profiles to authenticated` is table wide, so a new column is readable without a new grant.
 4. Function pattern (`0002_todo_stats.sql`): `language sql`, `stable`, `security invoker`, `set search_path = public`, then `revoke execute ... from public, anon` and `grant execute ... to authenticated`. The web side calls such a function through a helper that takes the client as an argument (`fetchTodoStats` in `src/features/integration/api.ts`) and is tested with a mocked `rpc`.
@@ -52,7 +55,7 @@ The server is small, so the page is designed to do little work per view:
 8. `cleaning_jobs.schedule` is `timestamptz not null` (T3C-B15). Postgres stores it in UTC and PostgREST returns it with an offset, so **no migration is needed for the storage requirement**; the page only formats it.
 9. The local seed (`supabase/seed.sql`) already holds cleaning types (for example `Deep`) and the four cleaning statuses (`Booked` has id `10000000-0000-0000-0000-000000000001`). The pgTAP files below therefore use fixture names such as `Test Deep`, which do not collide with the seed.
 10. `src/types/database.types.ts` is generated (`pnpm db:reset` regenerates it); never hand-edit it. It has no entry yet for `preferred_time_zone`, `get_complete_address_for_property_id`, `get_cleaners_for_cleaning_job_id` or `get_cleaning_jobs`.
-11. How this plan was checked: on 2026-11-27 every file below was run in a scratch copy of the repo against the local stack: `pnpm db:reset`, `pnpm test:db` (26 files, 395 tests, `Result: PASS`), `pnpm typecheck`, `pnpm lint`, `npx prettier --check src` and `pnpm vitest run` (9 files, 75 tests). The page itself was **not** opened in a browser (step 10 is the manual check).
+11. How this plan was checked: on 2026-11-27 every file below was run in a scratch copy of the repo against the local stack: `pnpm db:reset`, `pnpm test:db` (26 files, 395 tests, `Result: PASS`), `pnpm typecheck`, `pnpm lint`, `npx prettier --check src` and `pnpm vitest run` (14 files, 108 tests, with the tests of Step 9a). The page itself was **not** opened in a browser (step 10 is the manual check).
 12. Time zone data: the Node/ICU tz data on the dev machine gave `America/Edmonton` an offset of UTC-6 on 2026-12-01, not the usual UTC-7. Because rules can change, the Vitest tests use `America/New_York`, `Australia/Sydney` and `UTC`, and never assert a specific Edmonton offset.
 
 ## Decisions already made (do not reopen)
@@ -80,7 +83,7 @@ The server is small, so the page is designed to do little work per view:
 - All functions are `security invoker` (RLS still applies), executable by `authenticated` only. The address function returns null and the cleaners function returns no rows for an unknown id.
 - The list is read only: `List` with `canCreate={false}`, a resource with only `list`, no create, edit or delete pages. No change to `accessControlProvider.ts`.
 - Page state (filters, sort, page, page size) lives in the component, not in the URL. No live updates on this page.
-- **No** Playwright e2e spec and **no** component test for the page in this plan.
+- Tests above the data layer (added after review): Vitest component tests for the list page, the filter bar, the feedback modal, the time zone picker and `usePreferredTimeZone`, and a Playwright spec `e2e/cleaning-jobs.spec.ts` that runs against the seeded database (Step 9a).
 
 ### Open questions (do not block)
 
@@ -96,7 +99,7 @@ Resolved by the owner on 2026-11-27: a job can have several feedbacks and `creat
 
 - Create, edit and delete pages for cleaning jobs.
 - UI for the other cleaning tables.
-- Playwright e2e specs and Vitest component tests.
+- Visual (screenshot) tests.
 - Changes to `accessControlProvider.ts`, `authProvider.ts` and the dashboard.
 - The role model; loading data into SIT or production.
 - `README.md` and `AGENTS.md` edits.
@@ -2548,6 +2551,695 @@ Replace with:
 
 If any find text is not found exactly once, stop and report.
 
+### Step 9a. Component and end-to-end tests (create files)
+
+These run against mocked hooks (Vitest) or the seeded database (Playwright). The Playwright spec changes the seeded user's time zone and puts it back to `America/Edmonton` before it ends, so it can be rerun. The date shown in the page test is pinned to a fixed device zone so it also passes on CI, which runs in UTC.
+
+Create `src/features/cleaning-jobs/usePreferredTimeZone.test.tsx` with exactly this content:
+
+```tsx
+import { renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { usePreferredTimeZone } from '@/features/cleaning-jobs/usePreferredTimeZone'
+
+const useGetIdentity = vi.fn()
+const useOne = vi.fn()
+const useUpdate = vi.fn()
+const mutate = vi.fn()
+
+vi.mock('@refinedev/core', () => ({
+  useGetIdentity: () => useGetIdentity() as unknown,
+  useOne: (options: unknown) => useOne(options) as unknown,
+  useUpdate: () => useUpdate() as unknown,
+}))
+
+beforeEach(() => {
+  useGetIdentity.mockReturnValue({ data: { id: 'u1' } })
+  useOne.mockReturnValue({ result: { preferred_time_zone: 'Australia/Sydney' } })
+  useUpdate.mockReturnValue({ mutate, mutation: { isPending: false } })
+})
+
+describe('usePreferredTimeZone', () => {
+  it('returns the saved zone once the profile has loaded', () => {
+    const { result } = renderHook(() => usePreferredTimeZone())
+    expect(result.current.timeZone).toBe('Australia/Sydney')
+    expect(result.current.isLoaded).toBe(true)
+    expect(useOne).toHaveBeenCalledWith(expect.objectContaining({ resource: 'profiles', id: 'u1' }))
+  })
+
+  it('falls back to Edmonton and reports not loaded before the profile arrives', () => {
+    useOne.mockReturnValue({ result: undefined })
+    const { result } = renderHook(() => usePreferredTimeZone())
+    expect(result.current.timeZone).toBe('America/Edmonton')
+    expect(result.current.isLoaded).toBe(false)
+  })
+
+  it('saves the new zone on the signed-in user profile', () => {
+    const { result } = renderHook(() => usePreferredTimeZone())
+    result.current.save('UTC')
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resource: 'profiles',
+        id: 'u1',
+        values: { preferred_time_zone: 'UTC' },
+      }),
+    )
+  })
+
+  it('does not save before the user is known', () => {
+    useGetIdentity.mockReturnValue({ data: undefined })
+    const { result } = renderHook(() => usePreferredTimeZone())
+    result.current.save('UTC')
+    expect(mutate).not.toHaveBeenCalled()
+  })
+
+  it('reports saving while the update is running', () => {
+    useUpdate.mockReturnValue({ mutate, mutation: { isPending: true } })
+    const { result } = renderHook(() => usePreferredTimeZone())
+    expect(result.current.isSaving).toBe(true)
+  })
+})
+```
+
+Create `src/components/cleaning-jobs/TimeZonePicker.test.tsx` with exactly this content:
+
+```tsx
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+import { TimeZonePicker } from '@/components/cleaning-jobs/TimeZonePicker'
+import { deviceTimeZone } from '@/features/cleaning-jobs/timeZone'
+
+const device = deviceTimeZone()
+const other = device === 'UTC' ? 'Australia/Sydney' : 'UTC'
+
+describe('TimeZonePicker', () => {
+  it('shows the chosen zone and names the device zone on the button', () => {
+    render(<TimeZonePicker value={other} saving={false} onChange={vi.fn()} />)
+    expect(screen.getByText('Show times in')).toBeInTheDocument()
+    expect(screen.getByText(other)).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: `Use my device time zone (${device})` }),
+    ).toBeEnabled()
+  })
+
+  it('switches to the device zone when the button is pressed', async () => {
+    const onChange = vi.fn()
+    render(<TimeZonePicker value={other} saving={false} onChange={onChange} />)
+    await userEvent.click(screen.getByRole('button', { name: /use my device time zone/i }))
+    expect(onChange).toHaveBeenCalledWith(device)
+  })
+
+  it('disables the button when the device zone is already chosen', () => {
+    render(<TimeZonePicker value={device} saving={false} onChange={vi.fn()} />)
+    expect(screen.getByRole('button', { name: /use my device time zone/i })).toBeDisabled()
+  })
+
+  it('disables the button while saving', () => {
+    render(<TimeZonePicker value={other} saving onChange={vi.fn()} />)
+    expect(screen.getByRole('button', { name: /use my device time zone/i })).toBeDisabled()
+  })
+})
+```
+
+Create `src/components/cleaning-jobs/FeedbackModal.test.tsx` with exactly this content:
+
+```tsx
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { FeedbackModal } from '@/components/cleaning-jobs/FeedbackModal'
+import type { CleaningJobListRow } from '@/types/db'
+
+const useClientFeedbacks = vi.fn()
+
+vi.mock('@/features/cleaning-jobs/hooks', () => ({
+  useClientFeedbacks: (...args: unknown[]) => useClientFeedbacks(...args) as unknown,
+}))
+
+const job = { id: 'j1', client_name: 'Xavier Ashby' } as CleaningJobListRow
+
+beforeEach(() => {
+  useClientFeedbacks.mockReturnValue({ data: [], isLoading: false, error: null })
+})
+
+describe('FeedbackModal', () => {
+  it('asks for nothing and shows nothing while no job is chosen', () => {
+    render(<FeedbackModal job={null} timeZone="UTC" onClose={vi.fn()} />)
+    expect(useClientFeedbacks).toHaveBeenCalledWith(undefined)
+    expect(screen.queryByText('Feedback')).not.toBeInTheDocument()
+  })
+
+  it('lists every feedback with its stars and the date in the chosen time zone', () => {
+    useClientFeedbacks.mockReturnValue({
+      data: [
+        {
+          id: 'f2',
+          rating: 3,
+          feedback: 'Missed the oven',
+          created_at: '2026-12-06T10:00:00+00:00',
+        },
+        { id: 'f1', rating: 5, feedback: null, created_at: '2026-12-05T10:00:00+00:00' },
+      ],
+      isLoading: false,
+      error: null,
+    })
+    render(<FeedbackModal job={job} timeZone="UTC" onClose={vi.fn()} />)
+    expect(useClientFeedbacks).toHaveBeenCalledWith('j1')
+    expect(screen.getByText('Feedback for Xavier Ashby')).toBeInTheDocument()
+    expect(screen.getByText('Missed the oven')).toBeInTheDocument()
+    expect(screen.getByText('No comment')).toBeInTheDocument()
+    expect(screen.getByText('Sun 6 Dec 2026, 10:00 AM')).toBeInTheDocument()
+    expect(screen.getByText('Sat 5 Dec 2026, 10:00 AM')).toBeInTheDocument()
+    expect(screen.getAllByRole('radio', { checked: true }).length).toBeGreaterThan(0)
+  })
+
+  it('shows the database error', () => {
+    useClientFeedbacks.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('denied'),
+    })
+    render(<FeedbackModal job={job} timeZone="UTC" onClose={vi.fn()} />)
+    expect(screen.getByText('denied')).toBeInTheDocument()
+  })
+
+  it('calls onClose when the modal is dismissed', async () => {
+    const onClose = vi.fn()
+    render(<FeedbackModal job={job} timeZone="UTC" onClose={onClose} />)
+    await userEvent.click(screen.getByRole('button', { name: /close/i }))
+    expect(onClose).toHaveBeenCalled()
+  })
+})
+```
+
+Create `src/components/cleaning-jobs/CleaningJobFilterBar.test.tsx` with exactly this content:
+
+```tsx
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { CleaningJobFilterBar } from '@/components/cleaning-jobs/CleaningJobFilterBar'
+import { EMPTY_FILTERS, type CleaningJobFilters } from '@/features/cleaning-jobs/api'
+
+const rowsByResource: Record<string, { id: string; [key: string]: string }[]> = {
+  cleaners: [{ id: 'k1', first_name: 'Zed', middle_name: '', last_name: 'Adams' }],
+  companies: [{ id: 'co1', name: 'The Tidy Team' }],
+  clients: [{ id: 'c1', name: 'Xavier Ashby' }],
+  cleaning_types: [{ id: 't1', name: 'Deep' }],
+}
+
+vi.mock('@refinedev/core', () => ({
+  useList: ({ resource }: { resource: string }) => ({
+    result: { data: rowsByResource[resource] ?? [] },
+  }),
+}))
+
+function setup(value: CleaningJobFilters = EMPTY_FILTERS) {
+  const onChange = vi.fn()
+  render(<CleaningJobFilterBar value={value} onChange={onChange} />)
+  return onChange
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
+
+describe('CleaningJobFilterBar', () => {
+  it('lists the date choices in order, starting with All dates and Next month', () => {
+    setup()
+    const labels = screen.getAllByRole('radio').map((radio) => radio.closest('label')?.textContent)
+    expect(labels).toEqual([
+      'All dates',
+      'Next month',
+      'Current week',
+      'Current month',
+      'Last 3 months',
+      'Last 6 months',
+      'Custom range',
+    ])
+  })
+
+  it('picks a date range and clears any custom dates', async () => {
+    const onChange = setup({
+      ...EMPTY_FILTERS,
+      dateRange: 'custom',
+      dateFrom: '2026-12-01',
+      dateTo: null,
+    })
+    await userEvent.click(screen.getByText('Last 3 months'))
+    expect(onChange).toHaveBeenCalledWith({
+      ...EMPTY_FILTERS,
+      dateRange: 'last_3_months',
+      dateFrom: null,
+      dateTo: null,
+    })
+  })
+
+  it('shows the range picker only for the custom range', () => {
+    setup()
+    expect(screen.queryByPlaceholderText('From date')).not.toBeInTheDocument()
+  })
+
+  it('shows the range picker for the custom range', () => {
+    setup({ ...EMPTY_FILTERS, dateRange: 'custom' })
+    expect(screen.getByPlaceholderText('From date')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('To date')).toBeInTheDocument()
+  })
+
+  it('searches the feedback when Enter is pressed', async () => {
+    const onChange = setup()
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search feedback' }), 'oven{Enter}')
+    expect(onChange).toHaveBeenCalledWith({ ...EMPTY_FILTERS, feedbackSearch: 'oven' })
+  })
+
+  it('opens and closes the filters panel', async () => {
+    setup()
+    expect(screen.queryByText('Any cleaner')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /filters/i }))
+    expect(screen.getByText('Any cleaner')).toBeInTheDocument()
+    expect(screen.getByText('Any company')).toBeInTheDocument()
+    expect(screen.getByText('Any client')).toBeInTheDocument()
+    expect(screen.getByText('Any cleaning type')).toBeInTheDocument()
+    expect(screen.getByText('Any rating')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /hide filters/i }))
+    expect(screen.queryByText('Any cleaner')).not.toBeInTheDocument()
+  })
+
+  it('shows no active filters when nothing is set', () => {
+    setup()
+    expect(screen.queryByRole('group', { name: 'Active filters' })).not.toBeInTheDocument()
+  })
+
+  it('shows each active filter as a tag that can be removed', async () => {
+    const onChange = setup({ ...EMPTY_FILTERS, clientIds: ['c1'], ratings: [4] })
+    expect(screen.getByText('Client: Xavier Ashby')).toBeInTheDocument()
+    expect(screen.getByText('Rating: 4 stars')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Remove Client: Xavier Ashby' }))
+    expect(onChange).toHaveBeenCalledWith({ ...EMPTY_FILTERS, ratings: [4] })
+  })
+
+  it('clears every filter at once', async () => {
+    const onChange = setup({ ...EMPTY_FILTERS, cleanerIds: ['k1'], dateRange: 'current_week' })
+    await userEvent.click(screen.getByRole('button', { name: 'Clear all' }))
+    expect(onChange).toHaveBeenCalledWith(EMPTY_FILTERS)
+  })
+})
+```
+
+Create `src/pages/cleaning-jobs/CleaningJobList.test.tsx` with exactly this content:
+
+```tsx
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import type { ReactNode } from 'react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { CleaningJobQuery } from '@/features/cleaning-jobs/api'
+import { CleaningJobList } from '@/pages/cleaning-jobs/CleaningJobList'
+import type { CleaningJobListRow } from '@/types/db'
+
+const useCleaningJobs = vi.fn()
+const save = vi.fn()
+
+vi.mock('@refinedev/antd', () => ({
+  List: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+}))
+vi.mock('@refinedev/core', () => ({ useList: () => ({ result: { data: [] } }) }))
+vi.mock('@/features/cleaning-jobs/hooks', () => ({
+  useCleaningJobs: (...args: unknown[]) => useCleaningJobs(...args) as unknown,
+  useClientFeedbacks: () => ({
+    data: [
+      { id: 'f2', rating: 3, feedback: 'Missed the oven', created_at: '2026-12-06T10:00:00+00:00' },
+      { id: 'f1', rating: 5, feedback: 'Great clean', created_at: '2026-12-05T10:00:00+00:00' },
+    ],
+    isLoading: false,
+    error: null,
+  }),
+}))
+// CI runs in UTC; pin the device zone so the "use my device time zone" button is enabled there too.
+vi.mock('@/features/cleaning-jobs/timeZone', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/cleaning-jobs/timeZone')>()),
+  deviceTimeZone: () => 'Australia/Sydney',
+}))
+vi.mock('@/features/cleaning-jobs/usePreferredTimeZone', () => ({
+  usePreferredTimeZone: () => ({ timeZone: 'UTC', isLoaded: true, save, isSaving: false }),
+}))
+
+function job(overrides: Partial<CleaningJobListRow> = {}): CleaningJobListRow {
+  return {
+    id: 'j1',
+    schedule: '2026-12-01T09:00:00+00:00',
+    rate: 150,
+    description: '6 hr deep clean: oven',
+    status_name: 'Booked',
+    client_id: 'c1',
+    client_name: 'Xavier Ashby',
+    company_name: 'The Tidy Team',
+    address: '12 Maple Ridge Crescent, Edmonton, AB, T5J 0N3, CA',
+    cleaners: [{ cleaner_id: 'k1', full_name: 'Zed Adams' }],
+    cleaning_types: ['Deep', 'Move-Out'],
+    feedbacks: [],
+    avg_rating: null,
+    total_count: 1,
+    ...overrides,
+  }
+}
+
+function lastQuery(): CleaningJobQuery {
+  const call = useCleaningJobs.mock.calls.at(-1) as [CleaningJobQuery, string, boolean]
+  return call[0]
+}
+
+beforeEach(() => {
+  useCleaningJobs.mockReturnValue({
+    data: { rows: [job()], total: 1 },
+    isFetching: false,
+    error: null,
+  })
+})
+
+describe('CleaningJobList', () => {
+  it('shows every column, in order', () => {
+    render(<CleaningJobList />)
+    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent)
+    expect(headers).toEqual([
+      'Assignee',
+      'Company',
+      'Status',
+      'Scheduled Date',
+      'Client Name',
+      'Address',
+      'Cleaning Type',
+      'Notes',
+      'Feedback',
+      'Rating',
+      'Rate (CAD)',
+    ])
+  })
+
+  it('shows a job with its cleaners, types, date in the chosen zone and rate in CAD', () => {
+    render(<CleaningJobList />)
+    const row = screen.getByRole('row', { name: /Xavier Ashby/ })
+    expect(within(row).getByText('Zed Adams')).toBeInTheDocument()
+    expect(within(row).getByText('Deep')).toBeInTheDocument()
+    expect(within(row).getByText('Move-Out')).toBeInTheDocument()
+    expect(within(row).getByText('The Tidy Team')).toBeInTheDocument()
+    expect(within(row).getByText('Booked')).toBeInTheDocument()
+    expect(within(row).getByText('Tue 1 Dec 2026, 9:00 AM')).toBeInTheDocument()
+    expect(within(row).getByText('$150.00')).toBeInTheDocument()
+    expect(within(row).getByText('6 hr deep clean: oven')).toBeInTheDocument()
+  })
+
+  it('marks an unassigned job and a job without feedback', () => {
+    useCleaningJobs.mockReturnValue({
+      data: { rows: [job({ cleaners: [] })], total: 1 },
+      isFetching: false,
+      error: null,
+    })
+    render(<CleaningJobList />)
+    expect(screen.getByText('Unassigned')).toBeInTheDocument()
+  })
+
+  it('shows one feedback inline with its stars and the average for several', () => {
+    useCleaningJobs.mockReturnValue({
+      data: {
+        rows: [
+          job({
+            id: 'j1',
+            client_name: 'Single Feedback',
+            feedbacks: [
+              { rating: 4, feedback: 'Very good', created_at: '2026-12-02T10:00:00+00:00' },
+            ],
+            avg_rating: 4,
+          }),
+        ],
+        total: 1,
+      },
+      isFetching: false,
+      error: null,
+    })
+    render(<CleaningJobList />)
+    const row = screen.getByRole('row', { name: /Single Feedback/ })
+    expect(within(row).getByText('Very good')).toBeInTheDocument()
+    expect(within(row).queryByRole('button', { name: /view all/i })).not.toBeInTheDocument()
+  })
+
+  it('opens every feedback of a job with several in a modal', async () => {
+    useCleaningJobs.mockReturnValue({
+      data: {
+        rows: [
+          job({
+            feedbacks: [
+              { rating: 3, feedback: 'Missed the oven', created_at: '2026-12-06T10:00:00+00:00' },
+              { rating: 5, feedback: 'Great clean', created_at: '2026-12-05T10:00:00+00:00' },
+            ],
+            avg_rating: 4,
+          }),
+        ],
+        total: 1,
+      },
+      isFetching: false,
+      error: null,
+    })
+    render(<CleaningJobList />)
+    expect(screen.getByText('avg of 2')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'View all (2)' }))
+    expect(screen.getByText('Feedback for Xavier Ashby')).toBeInTheDocument()
+    expect(screen.getByText('Missed the oven')).toBeInTheDocument()
+    expect(screen.getByText('Great clean')).toBeInTheDocument()
+  })
+
+  it('asks for the newest jobs first with the default query and the saved time zone', () => {
+    render(<CleaningJobList />)
+    expect(lastQuery()).toMatchObject({
+      sortBy: 'schedule',
+      sortDir: 'desc',
+      page: 1,
+      pageSize: 10,
+    })
+    const call = useCleaningJobs.mock.calls.at(-1) as [CleaningJobQuery, string, boolean]
+    expect(call[1]).toBe('UTC')
+    expect(call[2]).toBe(true)
+  })
+
+  it('sorts by a column and returns to page 1', async () => {
+    render(<CleaningJobList />)
+    await userEvent.click(screen.getByRole('columnheader', { name: 'Client Name' }))
+    expect(lastQuery()).toMatchObject({ sortBy: 'client', sortDir: 'asc', page: 1 })
+    await userEvent.click(screen.getByRole('columnheader', { name: 'Client Name' }))
+    expect(lastQuery()).toMatchObject({ sortBy: 'client', sortDir: 'desc' })
+    await userEvent.click(screen.getByRole('columnheader', { name: 'Client Name' }))
+    expect(lastQuery()).toMatchObject({ sortBy: 'schedule', sortDir: 'desc' })
+  })
+
+  it('does not offer sorting on feedback', () => {
+    render(<CleaningJobList />)
+    expect(screen.getByRole('columnheader', { name: 'Feedback' })).not.toHaveClass(
+      'ant-table-column-has-sorters',
+    )
+  })
+
+  it('filters by a date range and shows the empty state with a way back', async () => {
+    useCleaningJobs.mockImplementation((query: CleaningJobQuery) => ({
+      data:
+        query.filters.dateRange === 'all' ? { rows: [job()], total: 1 } : { rows: [], total: 0 },
+      isFetching: false,
+      error: null,
+    }))
+    render(<CleaningJobList />)
+    await userEvent.click(screen.getByText('Next month'))
+    expect(lastQuery().filters.dateRange).toBe('next_month')
+    expect(screen.getByText('No jobs match these filters')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }))
+    expect(lastQuery().filters.dateRange).toBe('all')
+    expect(screen.getByText('Xavier Ashby')).toBeInTheDocument()
+  })
+
+  it('shows the database error', () => {
+    useCleaningJobs.mockReturnValue({
+      data: undefined,
+      isFetching: false,
+      error: new Error('denied'),
+    })
+    render(<CleaningJobList />)
+    expect(screen.getByText('denied')).toBeInTheDocument()
+  })
+
+  it('saves a new time zone from the picker', async () => {
+    render(<CleaningJobList />)
+    await userEvent.click(screen.getByRole('button', { name: /use my device time zone/i }))
+    expect(save).toHaveBeenCalledWith('Australia/Sydney')
+  })
+})
+```
+
+Create `e2e/cleaning-jobs.spec.ts` with exactly this content:
+
+```ts
+import { test, expect, type Page } from '@playwright/test'
+
+// Local seed only (supabase/seeds/04_cleaning_jobs.sql): hundreds of jobs from Aug to Dec 2026.
+async function signIn(page: Page, email: string, password: string) {
+  await page.goto('/login')
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Password').fill(password)
+  await page.getByRole('button', { name: /sign in/i }).click()
+  await expect(page.getByRole('link', { name: 'Cleaning Jobs' })).toBeVisible()
+}
+
+async function openCleaningJobs(page: Page) {
+  await page.getByRole('link', { name: 'Cleaning Jobs' }).click()
+  await expect(page.getByRole('columnheader', { name: 'Scheduled Date' })).toBeVisible()
+  await expect(page.locator('tbody tr.ant-table-row').first()).toBeVisible()
+}
+
+// Types into the zone select so the option is rendered (the list has hundreds of zones).
+async function chooseZone(page: Page, zone: string) {
+  const select = page.getByTestId('time-zone-select')
+  // Click the select itself: the selected value sits on top of its search input.
+  await select.click()
+  await page.keyboard.type(zone)
+  // The option text is also repeated in a hidden accessibility list, so target the visible option.
+  await page
+    .locator(
+      '.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option-content',
+    )
+    .getByText(zone, { exact: true })
+    .click()
+}
+
+function dataRows(page: Page) {
+  return page.locator('tbody tr.ant-table-row')
+}
+
+test.describe('Cleaning Jobs', () => {
+  test.use({ storageState: { cookies: [], origins: [] } })
+
+  test('lists the jobs with every column, newest first, ten to a page', async ({ page }) => {
+    await signIn(page, 'user@example.com', 'user-password-123')
+    await openCleaningJobs(page)
+
+    const headers = await page.getByRole('columnheader').allTextContents()
+    expect(headers).toEqual([
+      'Assignee',
+      'Company',
+      'Status',
+      'Scheduled Date',
+      'Client Name',
+      'Address',
+      'Cleaning Type',
+      'Notes',
+      'Feedback',
+      'Rating',
+      'Rate (CAD)',
+    ])
+    await expect(dataRows(page)).toHaveCount(10)
+    // Rates are shown in Canadian dollars.
+    await expect(dataRows(page).first().getByText(/^\$\d/)).toBeVisible()
+    // Hundreds of jobs: the pager shows more than one page.
+    await expect(page.locator('.ant-pagination-item').last()).not.toHaveText('1')
+  })
+
+  test('filters by date range, cleaning type and feedback, and clears them', async ({ page }) => {
+    await signIn(page, 'user@example.com', 'user-password-123')
+    await openCleaningJobs(page)
+
+    await page.getByText('Last 6 months', { exact: true }).click()
+    const filters = page.getByRole('group', { name: 'Active filters' })
+    await expect(filters.getByText('Scheduled: Last 6 months')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Filters' }).click()
+    const type = page.getByRole('combobox', { name: 'Cleaning type' })
+    await type.click()
+    await type.fill('Deep')
+    await page
+      .locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')
+      .getByText('Deep', { exact: true })
+      .click()
+    await expect(filters.getByText('Cleaning type: Deep')).toBeVisible()
+    // Every row that is left has the Deep tag.
+    await expect(dataRows(page).first()).toBeVisible()
+    const rows = await dataRows(page).count()
+    for (let i = 0; i < rows; i++) {
+      await expect(
+        dataRows(page)
+          .nth(i)
+          .locator('.ant-tag', { hasText: /^Deep$/ }),
+      ).toBeVisible()
+    }
+
+    await page.getByRole('searchbox', { name: 'Search feedback' }).fill('excellent')
+    await page.getByRole('searchbox', { name: 'Search feedback' }).press('Enter')
+    await expect(filters.getByText(/Feedback: .excellent./)).toBeVisible()
+
+    await filters.getByRole('button', { name: 'Clear all' }).click()
+    await expect(filters).toHaveCount(0)
+    await expect(dataRows(page)).toHaveCount(10)
+  })
+
+  test('shows an empty state when nothing matches and a way back', async ({ page }) => {
+    await signIn(page, 'user@example.com', 'user-password-123')
+    await openCleaningJobs(page)
+
+    await page.getByRole('searchbox', { name: 'Search feedback' }).fill('zzzz no such feedback')
+    await page.getByRole('searchbox', { name: 'Search feedback' }).press('Enter')
+    await expect(page.getByText('No jobs match these filters')).toBeVisible()
+    await page.getByRole('button', { name: 'Clear filters' }).click()
+    await expect(dataRows(page)).toHaveCount(10)
+  })
+
+  test('sorts by a column and returns to newest first on the third click', async ({ page }) => {
+    await signIn(page, 'user@example.com', 'user-password-123')
+    await openCleaningJobs(page)
+
+    const header = page.getByRole('columnheader', { name: 'Client Name' })
+    await header.click()
+    await expect(header).toHaveAttribute('aria-sort', 'ascending')
+    await header.click()
+    await expect(header).toHaveAttribute('aria-sort', 'descending')
+    await header.click()
+    await expect(header).not.toHaveAttribute('aria-sort', /ascending|descending/)
+    await expect(page.getByRole('columnheader', { name: 'Scheduled Date' })).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    )
+    // Feedback is not sortable.
+    await expect(page.getByRole('columnheader', { name: 'Feedback' })).not.toHaveClass(
+      /ant-table-column-has-sorters/,
+    )
+  })
+
+  test('shows the schedule in the time zone the user chooses and remembers it', async ({
+    page,
+  }) => {
+    await signIn(page, 'user@example.com', 'user-password-123')
+    await openCleaningJobs(page)
+
+    const firstDate = () => dataRows(page).first().locator('td').nth(3)
+    const select = page.getByTestId('time-zone-select')
+    await expect(select).toContainText('America/Edmonton')
+    const edmonton = await firstDate().textContent()
+
+    try {
+      await chooseZone(page, 'UTC')
+      await expect(select).toContainText('UTC')
+      await expect(firstDate()).not.toHaveText(edmonton ?? '')
+
+      // The choice is saved on the profile, so it survives a reload.
+      await page.reload()
+      await expect(page.getByTestId('time-zone-select')).toContainText('UTC')
+    } finally {
+      // Put the seeded user back to the default so reruns start the same way.
+      await chooseZone(page, 'America/Edmonton')
+      await expect(page.getByTestId('time-zone-select')).toContainText('America/Edmonton')
+    }
+  })
+})
+```
+
+**Gate:** `pnpm test && pnpm exec playwright test e2e/cleaning-jobs.spec.ts`
+**Expect:** Vitest reports 14 files and 108 tests, all passing (the new files add 5 files and 33 tests); Playwright reports `6 passed` (the setup plus 5 tests). If a test fails, stop and report.
+
 ### Step 9. Gate: web
 
 ```bash
@@ -2585,10 +3277,2155 @@ The decisions in this plan are architectural (data access, the stored time zone 
 **Gate:** `ls docs/architecture`
 **Expect:** the files `0003` to `0006` are listed. `README.md` links to them.
 
+## Phase 2: colour motifs on the pills (Steps 12 to 23)
+
+> **For the implementer:** Phase 2 starts only after Phase 1 (Steps 0 to 11) is committed. Follow Steps 12 to 23 in order. Run every Gate command and compare its output with the Expect line. On any mismatch, or when the code does not match the Phase 2 Facts, **stop and report**; do not try to fix it. Do not `git add -A`, commit or push unless asked. Edits are applied in the order given; the line number of an edit is its line in the file after the earlier edits to that file.
+
+### Why (Phase 2)
+
+Source: owner request in conversation (2026-11-27): "add new column called color_motif to each of the resources (cleaning types, cleaning statuses, companies), to use as the distinguishing factor on the pills ... make sure to implement this with tests as well."
+
+- Story: "As a dispatcher, I want the Company, Status and Cleaning Type pills on the Cleaning Jobs list to have their own colours, so that I can tell them apart at a glance."
+- Acceptance:
+  - `companies`, `cleaning_types` and `cleaning_statuses` each get a `color_motif` column. Only the palette values are accepted; a new row gets `default`.
+  - An Admin or Super Admin picks the colour on the Create and Edit pages of each resource. A User cannot change it.
+  - The Cleaning Jobs list shows Company, Status and each Cleaning Type as an Ant Design `Tag` in its colour. The pill keeps its text, so colour is never the only signal.
+  - The local seed gives every seeded company, cleaning type and status its own colour.
+  - pgTAP, Vitest and Playwright tests cover the column, the seed, the function, the forms and the list.
+
+### Facts (verified 2026-11-27, Phase 2)
+
+1. Phase 2 runs on the branch Phase 1 landed on, `feat/T3C-B15-B16-B18-B19-B33-F35-Cleaning-Jobs` (not merged). The last migration is `supabase/migrations/0028_cleaning_job_rpc.sql`, so this phase adds `0029_color_motifs.sql`. The later table plans (T3C-B17, B26, B27, B28-29, B30, S31, B32) and the "plans now run to" note in T3C-B0 were shifted by one to `0030` to `0035` (rollbacks `0130` to `0135`) in the same change as this phase. Phase 1's rollbacks are `0127` and `0128`; Phase 2's is `0129`.
+2. `0006_companies.sql`, `0011_cleaning_types.sql` and `0012_cleaning_statuses.sql` create tables with only `id` and `name` (unique). Their update policies are `<table>_update ... using ((select public.has_permission('<table>', 'update')))`, and `app_permissions` gives `update` to Admin (`30000000-...-0001`) and Super Admin (`...-0003`) only; User (`...-0002`) reads only. These migrations belong to older tickets and are **not** edited.
+3. `0028_cleaning_job_rpc.sql` lines 75 to 246 define `get_cleaning_jobs` (14 arguments, `returns table (...)` at line 91, `company_name text` at line 99). Line 227 builds `cleaning_types` as `jsonb_agg(ct.name order by ct.name)` (a list of strings). Lines 254 and 255 revoke and grant execute. `create or replace` cannot change a function's returned columns, so the function is dropped and created again.
+4. `supabase/seeds/02_reference_data.sql`: companies insert at line 5 and cleaning types at line 13 use `on conflict (name) do nothing`; statuses at line 24 insert fixed ids with `on conflict do nothing`. `04_cleaning_jobs.sql` looks up companies, types and statuses by name and needs no change.
+5. `src/pages/cleaning-jobs/CleaningJobList.tsx` line 126 is the Company column (`dataIndex="company_name"`), line 127 the Status column, line 155 maps `record.cleaning_types` (strings) to `<Tag>`. `Tag` stays imported: line 120 still uses it for the cleaners.
+6. `src/types/db.ts` line 41 overrides `cleaning_types: string[]` on `CleaningJobListRow`. `company_color` and `status_color` come from the generated type as `string`.
+7. The Create and Edit pages of the three resources (`src/pages/{companies,cleaning-types,cleaning-statuses}/`) are one `Form` with a `Name` item and use Refine's `useForm`. Routes are `/companies`, `/cleaning-types` and `/cleaning-statuses`. `src/providers/accessControlProvider.ts` line 11 (`ADMIN_WRITE_ONLY`) hides the write buttons from a User for `cleaning_types` and `cleaning_statuses`, but not for `companies` (unchanged here, see open question 1; the database still refuses a User's change).
+8. Ant Design 5 (`antd ^5.29.3`): `<Tag color="blue">` renders the class `ant-tag-blue`, and `color="default"` renders `ant-tag-default` (the grey tag). Both are checked by the Vitest tests below.
+9. `tsconfig.app.json` has `types: ["vite/client"]` and no Node types, so a Vitest file cannot use `node:fs`. `import.meta.glob(..., { query: '?raw', import: 'default', eager: true })` (typed by `vite/client`) reads files as text inside Vitest; `colorMotif.test.ts` uses it to read the migrations.
+10. `supabase/tests/database/cleaning_jobs.test.sql` line 84 reads `(select cleaning_status_id from public.cleaning_jobs limit 1)`, which returns whichever row is first on disk. With this phase's migration and seed the first row is a seeded demo job with status Confirmed, and the test "new jobs default to the Booked status" fails (observed on 2026-11-27). Step 15 points it at the test's own job.
+11. In jsdom an Ant Design `Select` renders only part of a virtual option list, so `ColorMotifSelect` sets `virtual={false}` (12 options). In Chromium, clicking the `combobox` input of a select that shows a value times out because the chosen pill sits on top of it; the Playwright spec clicks the `.ant-select` element instead.
+12. How Phase 2 was checked: on 2026-11-27 every file below was applied to a scratch copy of the repo (Phase 1 files included) and run against the local stack: `pnpm db:reset`, `pnpm test:db` (28 files, 429 tests, `Result: PASS`), `npx prettier --check src e2e`, `pnpm typecheck`, `pnpm lint`, `pnpm test` (19 files, 132 tests) and `pnpm exec playwright test` (18 tests: 17 passed; `edge-function.spec.ts` failed only because the edge runtime was not running). The colour spec was run twice in a row and passed both times. Every find/replace pair below was checked to apply once to the current files and to give exactly the tested files. Playwright ran against a dev server on port 5199 (`E2E_BASE_URL=http://127.0.0.1:5199`) because another checkout's server was on port 5173; the default config needs nothing else. The rollback migration in "Rollback (Phase 2)" was run inside a transaction and rolled back. The pages were **not** checked by eye (Step 22 is the manual check).
+
+### Decisions already made (do not reopen)
+
+- **Palette (owner and reviewer, 2026-11-27).** Ant Design's preset tag colours `magenta`, `red`, `volcano`, `orange`, `gold`, `lime`, `green`, `cyan`, `blue`, `geekblue`, `purple`, plus `default` (the neutral grey tag), in that order with `default` first. They work with `Tag color`, adapt to the light and dark themes and leave no free-form hex to validate.
+- **Column.** `color_motif text not null default 'default'` on each table, with a check constraint `<table>_color_motif_valid` = `color_motif = any (public.color_motifs())`. Spelling follows the owner: the column is `color_motif` and the form label is "Color"; prose in comments may say colour.
+- **One list per side, compared by a test.** The database list is the function `public.color_motifs()` (immutable, `search_path = ''`, executable by `authenticated` because a check constraint runs with the writer's rights). The web list is `COLOR_MOTIFS` in `src/features/color-motif/colorMotif.ts`. The comparison: `colorMotif.test.ts` (Vitest, no database) reads every migration with `import.meta.glob`, takes the `array[...]` of the newest one that runs `create [or replace] function public.color_motifs()`, and expects it to equal `COLOR_MOTIFS` in order; `color_motifs.test.sql` (pgTAP) expects `public.color_motifs()` to equal the same literal and checks that all three constraints call the function. A change on one side only fails one of the two suites.
+- **Who can change a colour.** No new policy or grant: the existing update policies already allow Admin and Super Admin and filter out a User. pgTAP proves both.
+- **`get_cleaning_jobs` (owner and reviewer).** Migration `0029` drops and recreates it with the same 14 arguments, filters, sorts and paging. It adds `company_color` and `status_color` (after `company_name`), and each `cleaning_types` item becomes `{"name": ..., "color": ...}` ordered by name. The cleaning type sort still uses the names. Its revoke and grant are given again (a drop removes them). `0028` is not edited.
+- **Seed colours.** Companies: The Tidy Team `geekblue`, Total Home Care `volcano`, Maids in Pink `magenta`, Diamond MIP `purple`. Cleaning types: Regular `lime`, Deep `purple`, Move-In `cyan`, Move-Out `orange`, Construction `gold`, 1500+ Square Feet `geekblue`, Diamond Cleaning `magenta`. Statuses by life cycle: Booked `blue`, Confirmed `cyan`, In Progress `orange`, Done `green`. Distinct within each resource; `red` and `default` are left free. Companies and types use `on conflict (name) do update set color_motif = excluded.color_motif`; statuses use `on conflict (id) do update ...` because their ids are fixed and `cleaning_jobs` defaults to the Booked id (a name conflict target would fail on an id clash). A re-run of the seed puts the seeded colours back.
+- **Web structure.** The palette module lives in a shared `src/features/color-motif/` (not `cleaning-jobs/`) because four resources use it. `ColorMotifTag` (the only place a pill colour is drawn; unknown values fall back to `default`) and `ColorMotifSelect` (the "Color" field; each option is the pill itself with its name) live in `src/components/color-motif/`. `src/pages/` keeps only Create, Edit and List pages.
+- **Forms.** Each Create page gets a required "Color" item with `initialValue` `default`, so a new row always sends `color_motif`. Each Edit page gets the same item without an initial value (the record supplies it). A stored value the palette does not know shows as "Grey (default)".
+- **Resource lists.** The Name column of the companies, cleaning types and cleaning statuses lists renders the name as its pill (four lines each), so an Admin sees the result of a change at once.
+- **Jobs list.** Company, Status and each Cleaning Type render through `ColorMotifTag`. The cleaners (Assignee) keep the plain tag. Column order and headers do not change.
+- **Test fix.** The fragile `limit 1` in `cleaning_jobs.test.sql` (Fact 10) is fixed in its own commit, before the migration.
+- **Commit 2 carries the web follow-up of the row shape.** The generated row type gains required columns and `cleaning_types` changes shape, so the database change, the type override, the page and its test fixture land in one commit; otherwise that commit would fail `pnpm typecheck` and Playwright.
+
+### Open questions (do not block)
+
+1. `companies` is not in `ADMIN_WRITE_ONLY` (Fact 7), so a User sees Create and Edit buttons on Companies (the database refuses the save). Adding it is a one-line change to `accessControlProvider.ts` and its test; left for the owner.
+2. The seed colours are a first pick. The owner can change them in `02_reference_data.sql` (and the expected pairs in `color_motifs.test.sql`).
+3. The filter bar options and the active filter chips are not coloured. They can use `ColorMotifTag` later if wanted.
+4. Rows created on a hosted database start as `default` until an Admin picks a colour.
+
+### Out of scope (Phase 2)
+
+- Free-form or hex colours, a colour picker, or per-user colours.
+- Colours for cleaners, clients or any other table.
+- Colour in the filter bar, the filter chips or the feedback modal.
+- Changes to `accessControlProvider.ts`, `04_cleaning_jobs.sql`, `0006`, `0011`, `0012` and `0028`.
+- Visual (screenshot) or contrast tests.
+
+### Step 12. Baseline and backup
+
+```bash
+git status --short && git branch --show-current && git log --oneline -1 -- e2e/cleaning-jobs.spec.ts && ls supabase/migrations | tail -1 && pnpm db:start
+```
+
+**Expect:** `git status --short` prints nothing (or only files under `.claude/plans/`); the branch is `feat/T3C-B15-B16-B18-B19-B33-F35-Cleaning-Jobs`; `git log` prints one commit (Phase 1 is committed); the last migration is `0028_cleaning_job_rpc.sql`. Anything else: stop and report.
+
+Back up the local data first (the migration changes three tables):
+
+```bash
+pnpm exec supabase db dump --local --data-only -f /tmp/dispatch-before-0029.sql
+```
+
+**Gate:** `pnpm db:reset && pnpm test:db && pnpm test`
+**Expect:** the dump command prints `Dumped schema to /tmp/dispatch-before-0029.sql`; `test:db` reports `Files=27, Tests=403` and `Result: PASS`; Vitest reports 14 files and 108 tests, all passing. Anything else: stop and report.
+
+### Step 13. Migration: color_motif columns and get_cleaning_jobs (create file)
+
+Create `supabase/migrations/0029_color_motifs.sql` with exactly this content:
+
+```sql
+-- 0029_color_motifs: a colour for the pills of companies, cleaning types and cleaning statuses.
+
+-- The palette: Ant Design's preset tag colours plus 'default' (the neutral grey tag). This function
+-- is the only copy of the list in the database. The web has the only other copy, COLOR_MOTIFS in
+-- src/features/color-motif/colorMotif.ts, and colorMotif.test.ts fails when the two differ (it reads
+-- the array below from the newest migration that defines this function). To change the palette, add
+-- a migration that replaces this function, then update COLOR_MOTIFS.
+create function public.color_motifs()
+returns text[]
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select array[
+    'default', 'magenta', 'red', 'volcano', 'orange', 'gold',
+    'lime', 'green', 'cyan', 'blue', 'geekblue', 'purple'
+  ]::text[];
+$$;
+
+-- The check constraints below call it as the user who writes the row, so authenticated needs it.
+revoke execute on function public.color_motifs() from public, anon;
+grant  execute on function public.color_motifs() to authenticated;
+
+-- Existing rows get 'default'; 02_reference_data.sql gives the seeded rows their colours. The
+-- existing update policies (has_permission ... 'update') decide who may change a colour: Admin and
+-- Super Admin, not User.
+alter table public.companies
+  add column color_motif text not null default 'default'
+    constraint companies_color_motif_valid
+    check (color_motif = any (public.color_motifs()));
+
+alter table public.cleaning_types
+  add column color_motif text not null default 'default'
+    constraint cleaning_types_color_motif_valid
+    check (color_motif = any (public.color_motifs()));
+
+alter table public.cleaning_statuses
+  add column color_motif text not null default 'default'
+    constraint cleaning_statuses_color_motif_valid
+    check (color_motif = any (public.color_motifs()));
+
+-- get_cleaning_jobs (0028) now also returns the colour of each pill. A function's return type
+-- cannot change with "create or replace", so it is dropped and created again with the same
+-- arguments, filters, sorts and paging; only the returned columns change. Its grants go with it,
+-- so they are given again below.
+drop function public.get_cleaning_jobs(uuid[], uuid[], uuid[], uuid[], text, integer[], text, date, date, text, text, text, integer, integer);
+
+-- One page of the Cleaning Jobs list: filtered, sorted and counted on the server, with every
+-- display column included, so the web page makes one call instead of one per row.
+--   * An empty or null filter means "do not filter". Within one filter the values are OR (any of
+--     these cleaners); different filters are AND.
+--   * p_feedback_search matches any feedback text of the job as a plain substring, ignoring case.
+--   * p_ratings matches jobs that have at least one feedback with one of these ratings.
+--   * p_date_range limits the scheduled date. It is null (no limit) or one of:
+--       next_month      the 1st of next month 00:00 up to the 1st of the month after 00:00
+--       current_week    Monday 00:00 up to the next Monday 00:00
+--       current_month   the 1st 00:00 up to the 1st of next month 00:00
+--       last_3_months   00:00 of the day 3 months ago up to the end of today
+--       last_6_months   00:00 of the day 6 months ago up to the end of today
+--       custom          p_date_from 00:00 up to the end of p_date_to; either may be null
+--     Every boundary is read in p_time_zone (an IANA name), so "today" and "this week" match
+--     what the user sees. p_date_from and p_date_to are only used by custom.
+--   * p_sort_by is schedule, client, cleaning_type or rating. cleaning_type sorts by the type
+--     names joined with commas; rating sorts by the average rating. Jobs
+--     without a value sort last. Ties fall back to newest schedule, then id, so paging is stable.
+--   * p_page_size is limited to 1..100. total_count is the number of jobs that match the filters.
+--   * company_color and status_color are the color_motif of the job's company and status; each
+--     cleaning_types item is {"name", "color"}, ordered by name.
+-- security invoker: RLS on every table it reads still applies.
+create function public.get_cleaning_jobs(
+  p_cleaner_ids       uuid[]  default null,
+  p_company_ids       uuid[]  default null,
+  p_client_ids        uuid[]  default null,
+  p_cleaning_type_ids uuid[]  default null,
+  p_feedback_search   text    default null,
+  p_ratings           integer[] default null,
+  p_date_range        text    default null,
+  p_date_from         date    default null,
+  p_date_to           date    default null,
+  p_time_zone         text    default 'America/Edmonton',
+  p_sort_by           text    default 'schedule',
+  p_sort_dir          text    default 'desc',
+  p_page              integer default 1,
+  p_page_size         integer default 10
+)
+returns table (
+  id             uuid,
+  schedule       timestamptz,
+  rate           numeric,
+  description    text,
+  status_name    text,
+  client_id      uuid,
+  client_name    text,
+  company_name   text,
+  company_color  text,
+  status_color   text,
+  address        text,
+  cleaners       jsonb,
+  cleaning_types jsonb,
+  feedbacks      jsonb,
+  avg_rating     numeric,
+  total_count    bigint
+)
+language plpgsql
+stable
+security invoker
+set search_path = public
+as $$
+#variable_conflict use_column
+declare
+  v_size integer := least(greatest(coalesce(p_page_size, 10), 1), 100);
+  v_offset integer := (greatest(coalesce(p_page, 1), 1) - 1) * v_size;
+  v_search text := nullif(trim(p_feedback_search), '');
+  v_tz     text := coalesce(p_time_zone, 'America/Edmonton');
+  v_today  timestamp;
+  v_from   timestamptz;
+  v_to     timestamptz;
+begin
+  if p_sort_by is null or p_sort_by not in ('schedule', 'client', 'cleaning_type', 'rating') then
+    raise exception 'invalid sort column: %', p_sort_by using errcode = '22023';
+  end if;
+  if p_sort_dir is null or p_sort_dir not in ('asc', 'desc') then
+    raise exception 'invalid sort direction: %', p_sort_dir using errcode = '22023';
+  end if;
+
+  if not public.is_valid_time_zone(v_tz) then
+    raise exception 'invalid time zone: %', v_tz using errcode = '22023';
+  end if;
+
+  -- Midnight today in the user's time zone, as a plain timestamp. "timestamp at time zone"
+  -- turns a wall clock time in that zone back into a timestamptz.
+  v_today := date_trunc('day', now() at time zone v_tz);
+  if p_date_range is not null then
+    case p_date_range
+      when 'next_month' then
+        v_from := (date_trunc('month', v_today) + interval '1 month') at time zone v_tz;
+        v_to   := (date_trunc('month', v_today) + interval '2 months') at time zone v_tz;
+      when 'current_week' then
+        v_from := date_trunc('week', v_today) at time zone v_tz;
+        v_to   := (date_trunc('week', v_today) + interval '7 days') at time zone v_tz;
+      when 'current_month' then
+        v_from := date_trunc('month', v_today) at time zone v_tz;
+        v_to   := (date_trunc('month', v_today) + interval '1 month') at time zone v_tz;
+      when 'last_3_months' then
+        v_from := (v_today - interval '3 months') at time zone v_tz;
+        v_to   := (v_today + interval '1 day') at time zone v_tz;
+      when 'last_6_months' then
+        v_from := (v_today - interval '6 months') at time zone v_tz;
+        v_to   := (v_today + interval '1 day') at time zone v_tz;
+      when 'custom' then
+        if p_date_from is not null and p_date_to is not null and p_date_from > p_date_to then
+          raise exception 'date range starts after it ends' using errcode = '22023';
+        end if;
+        v_from := p_date_from::timestamp at time zone v_tz;
+        v_to   := (p_date_to + 1)::timestamp at time zone v_tz;
+      else
+        raise exception 'invalid date range: %', p_date_range using errcode = '22023';
+    end case;
+  end if;
+
+  return query
+  with ranked as (
+    select
+      j.id,
+      count(*) over () as total_count,
+      row_number() over (
+        order by
+          case when p_sort_by = 'schedule' and p_sort_dir = 'asc'  then j.schedule end asc  nulls last,
+          case when p_sort_by = 'schedule' and p_sort_dir = 'desc' then j.schedule end desc nulls last,
+          case when p_sort_by = 'client' and p_sort_dir = 'asc'  then lower(c.name) end asc  nulls last,
+          case when p_sort_by = 'client' and p_sort_dir = 'desc' then lower(c.name) end desc nulls last,
+          case when p_sort_by = 'cleaning_type' and p_sort_dir = 'asc' then (
+            select string_agg(ct.name, ', ' order by ct.name)
+            from public.cleaning_job_cleaning_types jct
+            join public.cleaning_types ct on ct.id = jct.cleaning_type_id
+            where jct.cleaning_job_id = j.id) end asc nulls last,
+          case when p_sort_by = 'cleaning_type' and p_sort_dir = 'desc' then (
+            select string_agg(ct.name, ', ' order by ct.name)
+            from public.cleaning_job_cleaning_types jct
+            join public.cleaning_types ct on ct.id = jct.cleaning_type_id
+            where jct.cleaning_job_id = j.id) end desc nulls last,
+          case when p_sort_by = 'rating' and p_sort_dir = 'asc' then (
+            select avg(f.rating) from public.cleaning_feedbacks f
+            where f.cleaning_job_id = j.id) end asc nulls last,
+          case when p_sort_by = 'rating' and p_sort_dir = 'desc' then (
+            select avg(f.rating) from public.cleaning_feedbacks f
+            where f.cleaning_job_id = j.id) end desc nulls last,
+          j.schedule desc,
+          j.id
+      ) as pos
+    from public.cleaning_jobs j
+    join public.clients c on c.id = j.client_id
+    where (v_from is null or j.schedule >= v_from)
+      and (v_to is null or j.schedule < v_to)
+      and (coalesce(cardinality(p_client_ids), 0) = 0 or j.client_id = any (p_client_ids))
+      and (coalesce(cardinality(p_company_ids), 0) = 0 or c.company_id = any (p_company_ids))
+      and (coalesce(cardinality(p_cleaner_ids), 0) = 0 or exists (
+            select 1 from public.cleaning_job_assignments a
+            where a.cleaning_job_id = j.id and a.cleaner_id = any (p_cleaner_ids)))
+      and (coalesce(cardinality(p_cleaning_type_ids), 0) = 0 or exists (
+            select 1 from public.cleaning_job_cleaning_types jct
+            where jct.cleaning_job_id = j.id and jct.cleaning_type_id = any (p_cleaning_type_ids)))
+      and (v_search is null or exists (
+            select 1 from public.cleaning_feedbacks f
+            where f.cleaning_job_id = j.id
+              and strpos(lower(f.feedback), lower(v_search)) > 0))
+      and (coalesce(cardinality(p_ratings), 0) = 0 or exists (
+            select 1 from public.cleaning_feedbacks f
+            where f.cleaning_job_id = j.id and f.rating = any (p_ratings)))
+  )
+  select
+    j.id,
+    j.schedule,
+    j.rate,
+    j.description,
+    s.name,
+    c.id,
+    c.name,
+    co.name,
+    co.color_motif,
+    s.color_motif,
+    public.get_complete_address_for_property_id(j.property_id),
+    (select coalesce(jsonb_agg(jsonb_build_object('cleaner_id', g.cleaner_id, 'full_name', g.full_name)
+                              order by g.full_name), '[]'::jsonb)
+       from public.get_cleaners_for_cleaning_job_id(j.id) g),
+    (select coalesce(jsonb_agg(jsonb_build_object('name', ct.name, 'color', ct.color_motif)
+                              order by ct.name), '[]'::jsonb)
+       from public.cleaning_job_cleaning_types jct
+       join public.cleaning_types ct on ct.id = jct.cleaning_type_id
+      where jct.cleaning_job_id = j.id),
+    (select coalesce(jsonb_agg(jsonb_build_object('rating', f.rating, 'feedback', f.feedback,
+                                                  'created_at', f.created_at)
+                              order by f.created_at desc, f.id), '[]'::jsonb)
+       from public.get_client_feedbacks_for_cleaning_job_id(j.id) f),
+    (select round(avg(f.rating), 1) from public.cleaning_feedbacks f
+      where f.cleaning_job_id = j.id),
+    r.total_count
+  from ranked r
+  join public.cleaning_jobs j on j.id = r.id
+  join public.clients c on c.id = j.client_id
+  join public.companies co on co.id = c.company_id
+  join public.cleaning_statuses s on s.id = j.cleaning_status_id
+  where r.pos > v_offset and r.pos <= v_offset + v_size
+  order by r.pos;
+end;
+$$;
+
+revoke execute on function public.get_cleaning_jobs(uuid[], uuid[], uuid[], uuid[], text, integer[], text, date, date, text, text, text, integer, integer) from public, anon;
+grant  execute on function public.get_cleaning_jobs(uuid[], uuid[], uuid[], uuid[], text, integer[], text, date, date, text, text, text, integer, integer) to authenticated;
+```
+
+### Step 14. Seed colours (edit file)
+
+Edit 1 of 3 in `supabase/seeds/02_reference_data.sql`. Find (it starts at line 4, `-- Reference data: the companies we operate under. Safe to run more than once.`):
+
+```sql
+-- Reference data: the companies we operate under. Safe to run more than once.
+insert into public.companies (name) values
+  ('The Tidy Team'),
+  ('Total Home Care'),
+  ('Maids in Pink'),
+  ('Diamond MIP')
+on conflict (name) do nothing;
+```
+
+Replace with:
+
+```sql
+-- Reference data: the companies we operate under, each with its pill colour (0029_color_motifs.sql).
+-- Safe to run more than once: a re-run resets the colours to these values.
+insert into public.companies (name, color_motif) values
+  ('The Tidy Team', 'geekblue'),
+  ('Total Home Care', 'volcano'),
+  ('Maids in Pink', 'magenta'),
+  ('Diamond MIP', 'purple')
+on conflict (name) do update set color_motif = excluded.color_motif;
+```
+
+Edit 2 of 3 in `supabase/seeds/02_reference_data.sql`. Find (it starts at line 13, `-- Reference data: cleaning types. Safe to run more than once.`):
+
+```sql
+-- Reference data: cleaning types. Safe to run more than once.
+insert into public.cleaning_types (name) values
+  ('Regular'),
+  ('Deep'),
+  ('Move-In'),
+  ('Move-Out'),
+  ('Construction'),
+  ('1500+ Square Feet'),
+  ('Diamond Cleaning')
+on conflict (name) do nothing;
+```
+
+Replace with:
+
+```sql
+-- Reference data: cleaning types, each with its pill colour. Safe to run more than once.
+insert into public.cleaning_types (name, color_motif) values
+  ('Regular', 'lime'),
+  ('Deep', 'purple'),
+  ('Move-In', 'cyan'),
+  ('Move-Out', 'orange'),
+  ('Construction', 'gold'),
+  ('1500+ Square Feet', 'geekblue'),
+  ('Diamond Cleaning', 'magenta')
+on conflict (name) do update set color_motif = excluded.color_motif;
+```
+
+Edit 3 of 3 in `supabase/seeds/02_reference_data.sql`. Find (it starts at line 24, `-- Reference data: job statuses, in life-cycle order. Fixed ids: cleaning_jobs defaults to Booked.`):
+
+```sql
+-- Reference data: job statuses, in life-cycle order. Fixed ids: cleaning_jobs defaults to Booked.
+insert into public.cleaning_statuses (id, name) values
+  ('10000000-0000-0000-0000-000000000001', 'Booked'),
+  ('10000000-0000-0000-0000-000000000002', 'Confirmed'),
+  ('10000000-0000-0000-0000-000000000003', 'In Progress'),
+  ('10000000-0000-0000-0000-000000000004', 'Done')
+on conflict do nothing;
+```
+
+Replace with:
+
+```sql
+-- Reference data: job statuses, in life-cycle order, coloured by life-cycle stage. Fixed ids:
+-- cleaning_jobs defaults to Booked. Safe to run more than once.
+insert into public.cleaning_statuses (id, name, color_motif) values
+  ('10000000-0000-0000-0000-000000000001', 'Booked', 'blue'),
+  ('10000000-0000-0000-0000-000000000002', 'Confirmed', 'cyan'),
+  ('10000000-0000-0000-0000-000000000003', 'In Progress', 'orange'),
+  ('10000000-0000-0000-0000-000000000004', 'Done', 'green')
+on conflict (id) do update set color_motif = excluded.color_motif;
+```
+
+### Step 15. pgTAP tests (edit two files, create one)
+
+Edit 1 of 1 in `supabase/tests/database/cleaning_jobs.test.sql`. Find (it starts at line 84, `(select cleaning_status_id from public.cleaning_jobs limit 1),`):
+
+```sql
+  (select cleaning_status_id from public.cleaning_jobs limit 1),
+```
+
+Replace with:
+
+```sql
+  (select cleaning_status_id from public.cleaning_jobs where client_id = 'c1000000-0000-0000-0000-000000000001'),
+```
+
+Edit 1 of 5 in `supabase/tests/database/get_cleaning_jobs.test.sql`. Find (it starts at line 9, `select plan(19);`):
+
+```sql
+select plan(19);
+```
+
+Replace with:
+
+```sql
+select plan(20);
+```
+
+Edit 2 of 5 in `supabase/tests/database/get_cleaning_jobs.test.sql`. Find (it starts at line 23, `--   J3 2026-12-03 client Xavier (Alpha Co): no cleaners, no types, no feedback`):
+
+```sql
+--   J3 2026-12-03 client Xavier (Alpha Co): no cleaners, no types, no feedback
+insert into public.companies (id, name) values
+  ('c0000000-0000-0000-0000-000000000001', 'Alpha Co'),
+  ('c0000000-0000-0000-0000-000000000002', 'Beta Co');
+```
+
+Replace with:
+
+```sql
+--   J3 2026-12-03 client Xavier (Alpha Co): no cleaners, no types, no feedback
+-- Colours (0029_color_motifs.sql): Alpha Co red, Beta Co default; Test Deep gold, Test Move-Out
+-- default; every job keeps the default status Booked (blue in the seed).
+insert into public.companies (id, name, color_motif) values
+  ('c0000000-0000-0000-0000-000000000001', 'Alpha Co', 'red'),
+  ('c0000000-0000-0000-0000-000000000002', 'Beta Co', 'default');
+```
+
+Edit 3 of 5 in `supabase/tests/database/get_cleaning_jobs.test.sql`. Find (it starts at line 47, `insert into public.cleaning_types (id, name) values`):
+
+```sql
+insert into public.cleaning_types (id, name) values
+  ('c4000000-0000-0000-0000-000000000001', 'Test Deep'),
+  ('c4000000-0000-0000-0000-000000000002', 'Test Move-Out');
+```
+
+Replace with:
+
+```sql
+insert into public.cleaning_types (id, name, color_motif) values
+  ('c4000000-0000-0000-0000-000000000001', 'Test Deep', 'gold'),
+  ('c4000000-0000-0000-0000-000000000002', 'Test Move-Out', 'default');
+```
+
+Edit 4 of 5 in `supabase/tests/database/get_cleaning_jobs.test.sql`. Find (it starts at line 174, `'["Test Deep", "Test Move-Out"]'::jsonb,`):
+
+```sql
+    '["Test Deep", "Test Move-Out"]'::jsonb,
+```
+
+Replace with:
+
+```sql
+    '[{"name": "Test Deep", "color": "gold"}, {"name": "Test Move-Out", "color": "default"}]'::jsonb,
+```
+
+Edit 5 of 5 in `supabase/tests/database/get_cleaning_jobs.test.sql`. Find (it starts at line 177, `'a row carries every display column, with the feedback newest first'`):
+
+```sql
+  'a row carries every display column, with the feedback newest first'
+);
+```
+
+Replace with:
+
+```sql
+  'a row carries every display column, with the feedback newest first'
+);
+
+select results_eq(
+  $$select id, company_color, status_color, cleaning_types from public.get_cleaning_jobs()$$,
+  $$values
+    ('c3000000-0000-0000-0000-000000000003'::uuid, 'red', 'blue', '[]'::jsonb),
+    ('c3000000-0000-0000-0000-000000000002'::uuid, 'default', 'blue', '[{"name": "Test Move-Out", "color": "default"}]'::jsonb),
+    ('c3000000-0000-0000-0000-000000000001'::uuid, 'red', 'blue', '[{"name": "Test Deep", "color": "gold"}, {"name": "Test Move-Out", "color": "default"}]'::jsonb)$$,
+  'each row carries the colour of its company, its status and each cleaning type'
+);
+```
+
+Create `supabase/tests/database/color_motifs.test.sql` with exactly this content:
+
+```sql
+-- pgTAP: color_motif on companies, cleaning_types and cleaning_statuses (0029_color_motifs.sql).
+-- Palette, default, check constraint, seed colours and who may change a colour.
+-- Run with: pnpm test:db   (supabase test db)
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(25);
+
+-- The palette. This literal must equal COLOR_MOTIFS in src/features/color-motif/colorMotif.ts, in
+-- the same order. colorMotif.test.ts compares COLOR_MOTIFS with the array in the newest migration
+-- that defines public.color_motifs(), and this test compares that function with the literal, so a
+-- change on either side fails one of the two suites.
+select is(
+  public.color_motifs(),
+  array['default', 'magenta', 'red', 'volcano', 'orange', 'gold',
+        'lime', 'green', 'cyan', 'blue', 'geekblue', 'purple']::text[],
+  'color_motifs() is the Ant Design preset tag palette plus default'
+);
+
+-- Each table's check constraint uses the function, so there is one list in the database.
+select set_eq(
+  $$select conrelid::regclass::text from pg_constraint
+    where conname like '%\_color\_motif\_valid' and contype = 'c'
+      and pg_get_constraintdef(oid) like '%color_motifs()%'$$,
+  $$values ('companies'), ('cleaning_types'), ('cleaning_statuses')$$,
+  'each table checks color_motif against color_motifs()'
+);
+
+-- Column shape.
+select col_not_null('public', 'companies', 'color_motif', 'companies.color_motif is required');
+select col_not_null('public', 'cleaning_types', 'color_motif', 'cleaning_types.color_motif is required');
+select col_not_null('public', 'cleaning_statuses', 'color_motif', 'cleaning_statuses.color_motif is required');
+
+-- Fixture rows without a colour, inserted as the table owner (bypasses RLS).
+insert into public.companies (id, name) values ('d0000000-0000-0000-0000-000000000001', 'Motif Co');
+insert into public.cleaning_types (id, name) values ('d4000000-0000-0000-0000-000000000001', 'Motif Type');
+insert into public.cleaning_statuses (id, name) values ('d7000000-0000-0000-0000-000000000001', 'Motif Status');
+
+select is(
+  (select color_motif from public.companies where id = 'd0000000-0000-0000-0000-000000000001'),
+  'default', 'a new company gets the default colour'
+);
+select is(
+  (select color_motif from public.cleaning_types where id = 'd4000000-0000-0000-0000-000000000001'),
+  'default', 'a new cleaning type gets the default colour'
+);
+select is(
+  (select color_motif from public.cleaning_statuses where id = 'd7000000-0000-0000-0000-000000000001'),
+  'default', 'a new cleaning status gets the default colour'
+);
+
+-- The check rejects anything outside the palette (including a hex value and a different case).
+select throws_ok(
+  $$update public.companies set color_motif = 'pink' where id = 'd0000000-0000-0000-0000-000000000001'$$,
+  '23514', null, 'companies rejects a colour outside the palette'
+);
+select throws_ok(
+  $$update public.cleaning_types set color_motif = '#ff0000' where id = 'd4000000-0000-0000-0000-000000000001'$$,
+  '23514', null, 'cleaning_types rejects a hex colour'
+);
+select throws_ok(
+  $$update public.cleaning_statuses set color_motif = 'Blue' where id = 'd7000000-0000-0000-0000-000000000001'$$,
+  '23514', null, 'cleaning_statuses rejects a colour in the wrong case'
+);
+
+-- Every palette value is accepted by every table.
+select lives_ok(
+  $$insert into public.companies (name, color_motif)
+    select 'Motif Co ' || m, m from unnest(public.color_motifs()) m$$,
+  'companies accepts every palette colour'
+);
+select lives_ok(
+  $$insert into public.cleaning_types (name, color_motif)
+    select 'Motif Type ' || m, m from unnest(public.color_motifs()) m$$,
+  'cleaning_types accepts every palette colour'
+);
+select lives_ok(
+  $$insert into public.cleaning_statuses (name, color_motif)
+    select 'Motif Status ' || m, m from unnest(public.color_motifs()) m$$,
+  'cleaning_statuses accepts every palette colour'
+);
+
+-- Seed (02_reference_data.sql): every seeded row has its own, non-default colour.
+select results_eq(
+  $$select name, color_motif from public.companies
+    where name in ('The Tidy Team', 'Total Home Care', 'Maids in Pink', 'Diamond MIP') order by name$$,
+  $$values ('Diamond MIP', 'purple'), ('Maids in Pink', 'magenta'), ('The Tidy Team', 'geekblue'), ('Total Home Care', 'volcano')$$,
+  'the seeded companies have their colours'
+);
+select results_eq(
+  $$select name, color_motif from public.cleaning_types
+    where name in ('Regular', 'Deep', 'Move-In', 'Move-Out', 'Construction', '1500+ Square Feet', 'Diamond Cleaning') order by name$$,
+  $$values ('1500+ Square Feet', 'geekblue'), ('Construction', 'gold'), ('Deep', 'purple'), ('Diamond Cleaning', 'magenta'), ('Move-In', 'cyan'), ('Move-Out', 'orange'), ('Regular', 'lime')$$,
+  'the seeded cleaning types have their colours'
+);
+select results_eq(
+  $$select name, color_motif from public.cleaning_statuses where id::text like '10000000-%' order by id$$,
+  $$values ('Booked', 'blue'), ('Confirmed', 'cyan'), ('In Progress', 'orange'), ('Done', 'green')$$,
+  'the seeded statuses are coloured by life-cycle stage'
+);
+
+-- Re-running the seed keeps one row per name and puts a changed colour back.
+update public.cleaning_types set color_motif = 'red' where name = 'Deep';
+insert into public.cleaning_types (name, color_motif) values ('Deep', 'purple')
+on conflict (name) do update set color_motif = excluded.color_motif;
+select results_eq(
+  $$select count(*), min(color_motif) from public.cleaning_types where name = 'Deep'$$,
+  $$values (1::bigint, 'purple')$$,
+  'seeding again restores the colour without a duplicate'
+);
+
+-- Fixed test identities: Alice is a User, Carol an Admin.
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+  confirmation_token, email_change, email_change_token_new, recovery_token)
+values
+  ('aaaaaaaa-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000000000',
+   'authenticated', 'authenticated', 'alice@test.local', '', '{}', '{}', now(), now(), '', '', '', ''),
+  ('cccccccc-0000-0000-0000-00000000000c', '00000000-0000-0000-0000-000000000000',
+   'authenticated', 'authenticated', 'carol@test.local', '', '{}', '{}', now(), now(), '', '', '', '');
+update public.profiles set role_id = '30000000-0000-0000-0000-000000000001' where id = 'cccccccc-0000-0000-0000-00000000000c';
+
+-- Act as Alice (User role): the update policies filter her updates out, so nothing changes.
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-0000-0000-00000000000a","role":"authenticated"}', true);
+select set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-0000-0000-00000000000a', true);
+update public.companies set color_motif = 'red' where id = 'd0000000-0000-0000-0000-000000000001';
+update public.cleaning_types set color_motif = 'red' where id = 'd4000000-0000-0000-0000-000000000001';
+update public.cleaning_statuses set color_motif = 'red' where id = 'd7000000-0000-0000-0000-000000000001';
+reset role;
+
+select is(
+  (select color_motif from public.companies where id = 'd0000000-0000-0000-0000-000000000001'),
+  'default', 'a User cannot change a company colour'
+);
+select is(
+  (select color_motif from public.cleaning_types where id = 'd4000000-0000-0000-0000-000000000001'),
+  'default', 'a User cannot change a cleaning type colour'
+);
+select is(
+  (select color_motif from public.cleaning_statuses where id = 'd7000000-0000-0000-0000-000000000001'),
+  'default', 'a User cannot change a cleaning status colour'
+);
+
+-- Act as Carol (Admin role): she can change a colour, but only to a palette value.
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"cccccccc-0000-0000-0000-00000000000c","role":"authenticated"}', true);
+select set_config('request.jwt.claim.sub', 'cccccccc-0000-0000-0000-00000000000c', true);
+update public.companies set color_motif = 'green' where id = 'd0000000-0000-0000-0000-000000000001';
+update public.cleaning_types set color_motif = 'green' where id = 'd4000000-0000-0000-0000-000000000001';
+update public.cleaning_statuses set color_motif = 'green' where id = 'd7000000-0000-0000-0000-000000000001';
+select throws_ok(
+  $$update public.cleaning_types set color_motif = 'pink' where id = 'd4000000-0000-0000-0000-000000000001'$$,
+  '23514', null, 'an Admin is held to the palette too'
+);
+reset role;
+
+select is(
+  (select color_motif from public.companies where id = 'd0000000-0000-0000-0000-000000000001'),
+  'green', 'an Admin can change a company colour'
+);
+select is(
+  (select color_motif from public.cleaning_types where id = 'd4000000-0000-0000-0000-000000000001'),
+  'green', 'an Admin can change a cleaning type colour'
+);
+select is(
+  (select color_motif from public.cleaning_statuses where id = 'd7000000-0000-0000-0000-000000000001'),
+  'green', 'an Admin can change a cleaning status colour'
+);
+
+select * from finish();
+rollback;
+```
+
+### Step 16. Gate: database
+
+```bash
+pnpm db:reset && grep -c '"color_motif' src/types/database.types.ts && grep -c '"company_color": string' src/types/database.types.ts
+```
+
+**Expect:** `db:reset` exits 0 with no SQL error and applies `0029_color_motifs.sql`; the first `grep` prints `9` (Row, Insert and Update of three tables) and the second prints `1`. Anything else: stop and report.
+
+```bash
+pnpm test:db
+```
+
+**Expect:** every file reports `ok`, the summary is `Files=28, Tests=429` and `Result: PASS`; `color_motifs.test.sql` runs 25 tests and `get_cleaning_jobs.test.sql` runs 20. If a test fails, stop and report; do not edit the test or the migration to make it pass.
+
+### Step 17. Palette, pill and the jobs list (create three files, edit three)
+
+Create `src/features/color-motif/colorMotif.ts` with exactly this content:
+
+```ts
+// The colours a company, cleaning type or cleaning status can show on its pill: Ant Design's preset
+// tag colours plus 'default' (the neutral grey tag). Preset colours adapt to the light and dark
+// themes, so there is no hex value to validate.
+//
+// This is the only copy of the list in the web code. The database has the only other copy,
+// public.color_motifs() (supabase/migrations/0029_color_motifs.sql), and colorMotif.test.ts fails
+// when the two differ. The order is the order of the options in ColorMotifSelect.
+export const COLOR_MOTIFS = [
+  'default',
+  'magenta',
+  'red',
+  'volcano',
+  'orange',
+  'gold',
+  'lime',
+  'green',
+  'cyan',
+  'blue',
+  'geekblue',
+  'purple',
+] as const
+
+export type ColorMotif = (typeof COLOR_MOTIFS)[number]
+
+export const DEFAULT_COLOR_MOTIF: ColorMotif = 'default'
+
+// Names shown next to each swatch in ColorMotifSelect.
+export const COLOR_MOTIF_LABELS: Record<ColorMotif, string> = {
+  default: 'Grey (default)',
+  magenta: 'Magenta',
+  red: 'Red',
+  volcano: 'Volcano',
+  orange: 'Orange',
+  gold: 'Gold',
+  lime: 'Lime',
+  green: 'Green',
+  cyan: 'Cyan',
+  blue: 'Blue',
+  geekblue: 'Geek blue',
+  purple: 'Purple',
+}
+
+export function isColorMotif(value: unknown): value is ColorMotif {
+  return COLOR_MOTIFS.some((motif) => motif === value)
+}
+
+// Anything the palette does not know (null, an old or misspelt value) shows as the grey pill.
+export function toColorMotif(value: unknown): ColorMotif {
+  return isColorMotif(value) ? value : DEFAULT_COLOR_MOTIF
+}
+```
+
+Create `src/components/color-motif/ColorMotifTag.tsx` with exactly this content:
+
+```tsx
+import type { ReactNode } from 'react'
+import { Tag } from 'antd'
+import { toColorMotif } from '@/features/color-motif/colorMotif'
+
+interface Props {
+  // The row's color_motif. An unknown or missing value shows the grey default pill.
+  motif: string | null | undefined
+  // The pill text. Colour is never the only signal, so the text is required.
+  children: ReactNode
+}
+
+export function ColorMotifTag({ motif, children }: Props) {
+  return <Tag color={toColorMotif(motif)}>{children}</Tag>
+}
+```
+
+Create `src/components/color-motif/ColorMotifSelect.tsx` with exactly this content:
+
+```tsx
+import { Select } from 'antd'
+import {
+  COLOR_MOTIF_LABELS,
+  COLOR_MOTIFS,
+  toColorMotif,
+  type ColorMotif,
+} from '@/features/color-motif/colorMotif'
+import { ColorMotifTag } from '@/components/color-motif/ColorMotifTag'
+
+// Form.Item passes id, value and onChange; the id ties the select to the item's "Color" label.
+interface Props {
+  id?: string
+  value?: string | null
+  onChange?: (value: ColorMotif) => void
+}
+
+// Each option is the pill itself, so the admin sees the colour and its name together.
+const OPTIONS = COLOR_MOTIFS.map((motif) => ({
+  value: motif,
+  label: <ColorMotifTag motif={motif}>{COLOR_MOTIF_LABELS[motif]}</ColorMotifTag>,
+}))
+
+export function ColorMotifSelect({ id, value, onChange }: Props) {
+  return (
+    <Select<ColorMotif>
+      id={id}
+      // Before the record loads the value is undefined; show nothing rather than a guess.
+      value={value === undefined ? undefined : toColorMotif(value)}
+      onChange={onChange}
+      options={OPTIONS}
+      // Twelve options: render them all (no virtual list), so every pill is in the page at once.
+      virtual={false}
+      style={{ maxWidth: 240 }}
+    />
+  )
+}
+```
+
+Edit 1 of 1 in `src/types/db.ts`. Find (it starts at line 41, `cleaning_types: string[]`):
+
+```ts
+  cleaning_types: string[]
+```
+
+Replace with:
+
+```ts
+  // Each cleaning type's name and color_motif (0029_color_motifs.sql), ordered by name.
+  cleaning_types: { name: string; color: string }[]
+```
+
+Edit 1 of 3 in `src/pages/cleaning-jobs/CleaningJobList.tsx`. Find (it starts at line 18, `import { TimeZonePicker } from '@/components/cleaning-jobs/TimeZonePicker'`):
+
+```tsx
+import { TimeZonePicker } from '@/components/cleaning-jobs/TimeZonePicker'
+```
+
+Replace with:
+
+```tsx
+import { TimeZonePicker } from '@/components/cleaning-jobs/TimeZonePicker'
+import { ColorMotifTag } from '@/components/color-motif/ColorMotifTag'
+```
+
+Edit 2 of 3 in `src/pages/cleaning-jobs/CleaningJobList.tsx`. Find (it starts at line 127, `<Table.Column<CleaningJobListRow> title="Company" dataIndex="company_name" />`):
+
+```tsx
+        <Table.Column<CleaningJobListRow> title="Company" dataIndex="company_name" />
+        <Table.Column<CleaningJobListRow> title="Status" dataIndex="status_name" />
+```
+
+Replace with:
+
+```tsx
+        <Table.Column<CleaningJobListRow>
+          title="Company"
+          render={(_, record) => (
+            <ColorMotifTag motif={record.company_color}>{record.company_name}</ColorMotifTag>
+          )}
+        />
+        <Table.Column<CleaningJobListRow>
+          title="Status"
+          render={(_, record) => (
+            <ColorMotifTag motif={record.status_color}>{record.status_name}</ColorMotifTag>
+          )}
+        />
+```
+
+Edit 3 of 3 in `src/pages/cleaning-jobs/CleaningJobList.tsx`. Find (it starts at line 166, `{record.cleaning_types.map((name) => (`):
+
+```tsx
+              {record.cleaning_types.map((name) => (
+                <Tag key={name}>{name}</Tag>
+              ))}
+```
+
+Replace with:
+
+```tsx
+              {record.cleaning_types.map((type) => (
+                <ColorMotifTag key={type.name} motif={type.color}>
+                  {type.name}
+                </ColorMotifTag>
+              ))}
+```
+
+The page test follows the new row shape (two new fields and the cleaning type objects) and gains two pill tests:
+
+Edit 1 of 3 in `src/pages/cleaning-jobs/CleaningJobList.test.tsx`. Find (it starts at line 45, `company_name: 'The Tidy Team',`):
+
+```tsx
+    company_name: 'The Tidy Team',
+```
+
+Replace with:
+
+```tsx
+    company_name: 'The Tidy Team',
+    company_color: 'geekblue',
+    status_color: 'blue',
+```
+
+Edit 2 of 3 in `src/pages/cleaning-jobs/CleaningJobList.test.tsx`. Find (it starts at line 50, `cleaning_types: ['Deep', 'Move-Out'],`):
+
+```tsx
+    cleaning_types: ['Deep', 'Move-Out'],
+```
+
+Replace with:
+
+```tsx
+    cleaning_types: [
+      { name: 'Deep', color: 'purple' },
+      { name: 'Move-Out', color: 'orange' },
+    ],
+```
+
+Edit 3 of 3 in `src/pages/cleaning-jobs/CleaningJobList.test.tsx`. Find (it starts at line 106, `it('marks an unassigned job and a job without feedback', () => {`):
+
+```tsx
+  it('marks an unassigned job and a job without feedback', () => {
+```
+
+Replace with:
+
+```tsx
+  it('shows Company, Status and each Cleaning Type as a pill in its colour, text kept', () => {
+    render(<CleaningJobList />)
+    const row = screen.getByRole('row', { name: /Xavier Ashby/ })
+    expect(within(row).getByText('The Tidy Team')).toHaveClass('ant-tag', 'ant-tag-geekblue')
+    expect(within(row).getByText('Booked')).toHaveClass('ant-tag', 'ant-tag-blue')
+    expect(within(row).getByText('Deep')).toHaveClass('ant-tag', 'ant-tag-purple')
+    expect(within(row).getByText('Move-Out')).toHaveClass('ant-tag', 'ant-tag-orange')
+  })
+
+  it('shows a colour the palette does not know as the grey default pill', () => {
+    useCleaningJobs.mockReturnValue({
+      data: {
+        rows: [
+          job({
+            company_color: 'pink',
+            status_color: 'default',
+            cleaning_types: [{ name: 'Deep', color: '#ff0000' }],
+          }),
+        ],
+        total: 1,
+      },
+      isFetching: false,
+      error: null,
+    })
+    render(<CleaningJobList />)
+    const row = screen.getByRole('row', { name: /Xavier Ashby/ })
+    expect(within(row).getByText('The Tidy Team')).toHaveClass('ant-tag-default')
+    expect(within(row).getByText('The Tidy Team')).not.toHaveClass('ant-tag-pink')
+    expect(within(row).getByText('Booked')).toHaveClass('ant-tag-default')
+    expect(within(row).getByText('Deep')).toHaveClass('ant-tag-default')
+  })
+
+  it('marks an unassigned job and a job without feedback', () => {
+```
+
+**Gate:** `pnpm typecheck && pnpm exec vitest run src/pages/cleaning-jobs`
+**Expect:** `tsc -b` exits 0; Vitest reports 1 file with 13 tests, all passing. Anything else: stop and report.
+
+### Step 18. Color field on the forms and pills on the resource lists (edit nine files)
+
+Edit 1 of 2 in `src/pages/companies/CompanyCreate.tsx`. Find (it starts at line 3, `import type { TablesInsert } from '@/types/db'`):
+
+```tsx
+import type { TablesInsert } from '@/types/db'
+```
+
+Replace with:
+
+```tsx
+import type { TablesInsert } from '@/types/db'
+import { ColorMotifSelect } from '@/components/color-motif/ColorMotifSelect'
+import { DEFAULT_COLOR_MOTIF } from '@/features/color-motif/colorMotif'
+```
+
+Edit 2 of 2 in `src/pages/companies/CompanyCreate.tsx`. Find (it starts at line 23, `</Form>`):
+
+```tsx
+      </Form>
+```
+
+Replace with:
+
+```tsx
+        <Form.Item
+          label="Color"
+          name="color_motif"
+          initialValue={DEFAULT_COLOR_MOTIF}
+          rules={[{ required: true, message: 'Color is required' }]}
+        >
+          <ColorMotifSelect />
+        </Form.Item>
+      </Form>
+```
+
+Edit 1 of 2 in `src/pages/companies/CompanyEdit.tsx`. Find (it starts at line 4, `TablesUpdate } from '@/types/db'`):
+
+```tsx
+TablesUpdate } from '@/types/db'
+```
+
+Replace with:
+
+```tsx
+TablesUpdate } from '@/types/db'
+import { ColorMotifSelect } from '@/components/color-motif/ColorMotifSelect'
+```
+
+Edit 2 of 2 in `src/pages/companies/CompanyEdit.tsx`. Find (it starts at line 28, `</Form>`):
+
+```tsx
+      </Form>
+```
+
+Replace with:
+
+```tsx
+        <Form.Item
+          label="Color"
+          name="color_motif"
+          rules={[{ required: true, message: 'Color is required' }]}
+        >
+          <ColorMotifSelect />
+        </Form.Item>
+      </Form>
+```
+
+Edit 1 of 2 in `src/pages/companies/CompanyList.tsx`. Find (it starts at line 3, `import type { Company } from '@/types/db'`):
+
+```tsx
+import type { Company } from '@/types/db'
+```
+
+Replace with:
+
+```tsx
+import type { Company } from '@/types/db'
+import { ColorMotifTag } from '@/components/color-motif/ColorMotifTag'
+```
+
+Edit 2 of 2 in `src/pages/companies/CompanyList.tsx`. Find (it starts at line 15, `<Table.Column<Company> dataIndex="name" title="Name" sorter />`):
+
+```tsx
+        <Table.Column<Company> dataIndex="name" title="Name" sorter />
+```
+
+Replace with:
+
+```tsx
+        <Table.Column<Company>
+          dataIndex="name"
+          title="Name"
+          sorter
+          render={(name: string, record) => (
+            <ColorMotifTag motif={record.color_motif}>{name}</ColorMotifTag>
+          )}
+        />
+```
+
+Edit 1 of 2 in `src/pages/cleaning-types/CleaningTypeCreate.tsx`. Find (it starts at line 3, `import type { TablesInsert } from '@/types/db'`):
+
+```tsx
+import type { TablesInsert } from '@/types/db'
+```
+
+Replace with:
+
+```tsx
+import type { TablesInsert } from '@/types/db'
+import { ColorMotifSelect } from '@/components/color-motif/ColorMotifSelect'
+import { DEFAULT_COLOR_MOTIF } from '@/features/color-motif/colorMotif'
+```
+
+Edit 2 of 2 in `src/pages/cleaning-types/CleaningTypeCreate.tsx`. Find (it starts at line 25, `</Form>`):
+
+```tsx
+      </Form>
+```
+
+Replace with:
+
+```tsx
+        <Form.Item
+          label="Color"
+          name="color_motif"
+          initialValue={DEFAULT_COLOR_MOTIF}
+          rules={[{ required: true, message: 'Color is required' }]}
+        >
+          <ColorMotifSelect />
+        </Form.Item>
+      </Form>
+```
+
+Edit 1 of 2 in `src/pages/cleaning-types/CleaningTypeEdit.tsx`. Find (it starts at line 4, `TablesUpdate } from '@/types/db'`):
+
+```tsx
+TablesUpdate } from '@/types/db'
+```
+
+Replace with:
+
+```tsx
+TablesUpdate } from '@/types/db'
+import { ColorMotifSelect } from '@/components/color-motif/ColorMotifSelect'
+```
+
+Edit 2 of 2 in `src/pages/cleaning-types/CleaningTypeEdit.tsx`. Find (it starts at line 28, `</Form>`):
+
+```tsx
+      </Form>
+```
+
+Replace with:
+
+```tsx
+        <Form.Item
+          label="Color"
+          name="color_motif"
+          rules={[{ required: true, message: 'Color is required' }]}
+        >
+          <ColorMotifSelect />
+        </Form.Item>
+      </Form>
+```
+
+Edit 1 of 2 in `src/pages/cleaning-types/CleaningTypeList.tsx`. Find (it starts at line 3, `import type { CleaningType } from '@/types/db'`):
+
+```tsx
+import type { CleaningType } from '@/types/db'
+```
+
+Replace with:
+
+```tsx
+import type { CleaningType } from '@/types/db'
+import { ColorMotifTag } from '@/components/color-motif/ColorMotifTag'
+```
+
+Edit 2 of 2 in `src/pages/cleaning-types/CleaningTypeList.tsx`. Find (it starts at line 15, `<Table.Column<CleaningType> dataIndex="name" title="Name" sorter />`):
+
+```tsx
+        <Table.Column<CleaningType> dataIndex="name" title="Name" sorter />
+```
+
+Replace with:
+
+```tsx
+        <Table.Column<CleaningType>
+          dataIndex="name"
+          title="Name"
+          sorter
+          render={(name: string, record) => (
+            <ColorMotifTag motif={record.color_motif}>{name}</ColorMotifTag>
+          )}
+        />
+```
+
+Edit 1 of 2 in `src/pages/cleaning-statuses/CleaningStatusCreate.tsx`. Find (it starts at line 3, `import type { TablesInsert } from '@/types/db'`):
+
+```tsx
+import type { TablesInsert } from '@/types/db'
+```
+
+Replace with:
+
+```tsx
+import type { TablesInsert } from '@/types/db'
+import { ColorMotifSelect } from '@/components/color-motif/ColorMotifSelect'
+import { DEFAULT_COLOR_MOTIF } from '@/features/color-motif/colorMotif'
+```
+
+Edit 2 of 2 in `src/pages/cleaning-statuses/CleaningStatusCreate.tsx`. Find (it starts at line 25, `</Form>`):
+
+```tsx
+      </Form>
+```
+
+Replace with:
+
+```tsx
+        <Form.Item
+          label="Color"
+          name="color_motif"
+          initialValue={DEFAULT_COLOR_MOTIF}
+          rules={[{ required: true, message: 'Color is required' }]}
+        >
+          <ColorMotifSelect />
+        </Form.Item>
+      </Form>
+```
+
+Edit 1 of 2 in `src/pages/cleaning-statuses/CleaningStatusEdit.tsx`. Find (it starts at line 4, `TablesUpdate } from '@/types/db'`):
+
+```tsx
+TablesUpdate } from '@/types/db'
+```
+
+Replace with:
+
+```tsx
+TablesUpdate } from '@/types/db'
+import { ColorMotifSelect } from '@/components/color-motif/ColorMotifSelect'
+```
+
+Edit 2 of 2 in `src/pages/cleaning-statuses/CleaningStatusEdit.tsx`. Find (it starts at line 28, `</Form>`):
+
+```tsx
+      </Form>
+```
+
+Replace with:
+
+```tsx
+        <Form.Item
+          label="Color"
+          name="color_motif"
+          rules={[{ required: true, message: 'Color is required' }]}
+        >
+          <ColorMotifSelect />
+        </Form.Item>
+      </Form>
+```
+
+Edit 1 of 2 in `src/pages/cleaning-statuses/CleaningStatusList.tsx`. Find (it starts at line 3, `import type { CleaningStatus } from '@/types/db'`):
+
+```tsx
+import type { CleaningStatus } from '@/types/db'
+```
+
+Replace with:
+
+```tsx
+import type { CleaningStatus } from '@/types/db'
+import { ColorMotifTag } from '@/components/color-motif/ColorMotifTag'
+```
+
+Edit 2 of 2 in `src/pages/cleaning-statuses/CleaningStatusList.tsx`. Find (it starts at line 16, `<Table.Column<CleaningStatus> dataIndex="name" title="Name" />`):
+
+```tsx
+        <Table.Column<CleaningStatus> dataIndex="name" title="Name" />
+```
+
+Replace with:
+
+```tsx
+        <Table.Column<CleaningStatus>
+          dataIndex="name"
+          title="Name"
+          render={(name: string, record) => (
+            <ColorMotifTag motif={record.color_motif}>{name}</ColorMotifTag>
+          )}
+        />
+```
+
+**Gate:** `pnpm typecheck && pnpm lint`
+**Expect:** both exit 0. Anything else: stop and report.
+
+### Step 19. Vitest tests (create five files)
+
+The form tests replace Refine's `useForm` with a real antd form, so they check exactly the values a save would send.
+
+Create `src/features/color-motif/colorMotif.test.ts` with exactly this content:
+
+```ts
+import { describe, expect, it } from 'vitest'
+import {
+  COLOR_MOTIF_LABELS,
+  COLOR_MOTIFS,
+  DEFAULT_COLOR_MOTIF,
+  isColorMotif,
+  toColorMotif,
+} from '@/features/color-motif/colorMotif'
+
+// Every migration's text, keyed by path. Vite reads them at test time, so no Node types are needed.
+const migrations = import.meta.glob<string>('/supabase/migrations/*.sql', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
+
+// The palette as the database defines it: the array in the newest migration that (re)defines
+// public.color_motifs(). Migration file names sort in apply order (NNNN_name.sql).
+function databasePalette(): string[] {
+  const definitions = Object.keys(migrations)
+    .sort()
+    .map((path) => migrations[path] ?? '')
+    .filter((sql) => /create (or replace )?function public\.color_motifs\(\)/.test(sql))
+  const newest = definitions.at(-1) ?? ''
+  const array = /array\[([^\]]*)\]::text\[\]/.exec(newest)?.[1] ?? ''
+  return [...array.matchAll(/'([^']*)'/g)].map((match) => match[1] ?? '')
+}
+
+describe('COLOR_MOTIFS', () => {
+  it('matches public.color_motifs() in the newest migration that defines it, in order', () => {
+    expect(databasePalette()).toEqual([...COLOR_MOTIFS])
+  })
+
+  it('is the Ant Design preset tag palette with the grey default first', () => {
+    expect(COLOR_MOTIFS[0]).toBe(DEFAULT_COLOR_MOTIF)
+    expect(new Set(COLOR_MOTIFS).size).toBe(12)
+  })
+
+  it('has a label for every colour', () => {
+    expect(Object.keys(COLOR_MOTIF_LABELS)).toEqual([...COLOR_MOTIFS])
+    expect(COLOR_MOTIF_LABELS.geekblue).toBe('Geek blue')
+    expect(COLOR_MOTIF_LABELS.default).toBe('Grey (default)')
+  })
+})
+
+describe('isColorMotif', () => {
+  it('accepts every palette value', () => {
+    for (const motif of COLOR_MOTIFS) expect(isColorMotif(motif)).toBe(true)
+  })
+
+  it('rejects anything else', () => {
+    for (const value of ['pink', 'Blue', '#ff0000', '', null, undefined, 3]) {
+      expect(isColorMotif(value)).toBe(false)
+    }
+  })
+})
+
+describe('toColorMotif', () => {
+  it('keeps a palette value', () => {
+    expect(toColorMotif('geekblue')).toBe('geekblue')
+  })
+
+  it('falls back to the grey default for an unknown value', () => {
+    expect(toColorMotif('pink')).toBe('default')
+    expect(toColorMotif(null)).toBe('default')
+    expect(toColorMotif(undefined)).toBe('default')
+  })
+})
+```
+
+Create `src/components/color-motif/ColorMotifSelect.test.tsx` with exactly this content:
+
+```tsx
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { Form } from 'antd'
+import { describe, expect, it, vi } from 'vitest'
+import { ColorMotifSelect } from '@/components/color-motif/ColorMotifSelect'
+import { ColorMotifTag } from '@/components/color-motif/ColorMotifTag'
+import { COLOR_MOTIF_LABELS, COLOR_MOTIFS } from '@/features/color-motif/colorMotif'
+
+// The open dropdown (antd renders it in a portal on document.body).
+function dropdown() {
+  const element = document.querySelector<HTMLElement>(
+    '.ant-select-dropdown:not(.ant-select-dropdown-hidden)',
+  )
+  if (!element) throw new Error('the dropdown is not open')
+  return element
+}
+
+// The same wiring the Create and Edit pages use: a Form.Item labelled "Color".
+function renderInForm(value: string | undefined, onChange = vi.fn()) {
+  render(
+    <Form>
+      <Form.Item label="Color" htmlFor="color">
+        <ColorMotifSelect id="color" value={value} onChange={onChange} />
+      </Form.Item>
+    </Form>,
+  )
+  return onChange
+}
+
+describe('ColorMotifTag', () => {
+  it('shows its text in the colour it is given', () => {
+    render(<ColorMotifTag motif="geekblue">The Tidy Team</ColorMotifTag>)
+    expect(screen.getByText('The Tidy Team')).toHaveClass('ant-tag', 'ant-tag-geekblue')
+  })
+
+  it('shows an unknown or missing colour as the grey default', () => {
+    render(
+      <>
+        <ColorMotifTag motif="pink">Unknown</ColorMotifTag>
+        <ColorMotifTag motif={null}>Missing</ColorMotifTag>
+      </>,
+    )
+    expect(screen.getByText('Unknown')).toHaveClass('ant-tag-default')
+    expect(screen.getByText('Missing')).toHaveClass('ant-tag-default')
+  })
+})
+
+describe('ColorMotifSelect', () => {
+  it('is named Color and shows the chosen colour as a pill', () => {
+    renderInForm('blue')
+    expect(screen.getByRole('combobox', { name: 'Color' })).toBeInTheDocument()
+    expect(screen.getByText('Blue')).toHaveClass('ant-tag-blue')
+  })
+
+  it('offers every palette colour as a pill with its name, in palette order', async () => {
+    renderInForm('default')
+    await userEvent.click(screen.getByRole('combobox', { name: 'Color' }))
+    const pills = Array.from(dropdown().querySelectorAll('.ant-select-item-option .ant-tag'))
+    expect(pills.map((pill) => pill.textContent)).toEqual(
+      COLOR_MOTIFS.map((motif) => COLOR_MOTIF_LABELS[motif]),
+    )
+    pills.forEach((pill, index) => {
+      expect(pill).toHaveClass(`ant-tag-${COLOR_MOTIFS[index] ?? ''}`)
+    })
+  })
+
+  it('reports the colour the user picks', async () => {
+    const onChange = renderInForm('default')
+    await userEvent.click(screen.getByRole('combobox', { name: 'Color' }))
+    await userEvent.click(within(dropdown()).getByText('Geek blue'))
+    expect(onChange).toHaveBeenCalledWith('geekblue', expect.anything())
+  })
+
+  it('shows a stored value the palette does not know as the grey default', () => {
+    renderInForm('pink')
+    expect(screen.getByText('Grey (default)')).toHaveClass('ant-tag-default')
+  })
+})
+```
+
+Create `src/pages/companies/CompanyForms.test.tsx` with exactly this content:
+
+```tsx
+import { render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { Form } from 'antd'
+import type { ReactNode } from 'react'
+import { describe, expect, it, vi } from 'vitest'
+import { CompanyCreate } from '@/pages/companies/CompanyCreate'
+import { CompanyEdit } from '@/pages/companies/CompanyEdit'
+
+const onFinish = vi.fn()
+const loaded = vi.hoisted((): { values: Record<string, unknown> } => ({ values: {} }))
+
+// Refine's useForm, reduced to a real antd form: Save submits it and onFinish receives the values
+// Refine would send. For the Edit page the loaded record is the form's initial values.
+vi.mock('@refinedev/antd', () => {
+  function useForm() {
+    const [form] = Form.useForm()
+    return {
+      formProps: { form, onFinish, initialValues: loaded.values },
+      saveButtonProps: {
+        onClick: () => {
+          form.submit()
+        },
+      },
+      query: { isLoading: false },
+    }
+  }
+  function Page({ children, saveButtonProps }: { children: ReactNode; saveButtonProps: object }) {
+    return (
+      <div>
+        {children}
+        <button type="button" {...saveButtonProps}>
+          Save
+        </button>
+      </div>
+    )
+  }
+  return { useForm, Create: Page, Edit: Page }
+})
+
+function dropdown() {
+  const element = document.querySelector<HTMLElement>(
+    '.ant-select-dropdown:not(.ant-select-dropdown-hidden)',
+  )
+  if (!element) throw new Error('the dropdown is not open')
+  return element
+}
+
+describe('CompanyCreate', () => {
+  it('sends the grey default colour when none is picked', async () => {
+    loaded.values = {}
+    render(<CompanyCreate />)
+    await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Sparkle Co')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => {
+      expect(onFinish).toHaveBeenCalledWith({ name: 'Sparkle Co', color_motif: 'default' })
+    })
+  })
+
+  it('sends the picked colour', async () => {
+    loaded.values = {}
+    render(<CompanyCreate />)
+    await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Sparkle Co')
+    await userEvent.click(screen.getByRole('combobox', { name: 'Color' }))
+    await userEvent.click(within(dropdown()).getByText('Lime'))
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => {
+      expect(onFinish).toHaveBeenCalledWith({ name: 'Sparkle Co', color_motif: 'lime' })
+    })
+  })
+})
+
+describe('CompanyEdit', () => {
+  it('shows the stored colour and sends the new one', async () => {
+    loaded.values = { name: 'The Tidy Team', color_motif: 'geekblue' }
+    render(<CompanyEdit />)
+    expect(screen.getByText('Geek blue')).toHaveClass('ant-tag-geekblue')
+    await userEvent.click(screen.getByRole('combobox', { name: 'Color' }))
+    await userEvent.click(within(dropdown()).getByText('Red'))
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => {
+      expect(onFinish).toHaveBeenCalledWith({ name: 'The Tidy Team', color_motif: 'red' })
+    })
+  })
+})
+```
+
+Create `src/pages/cleaning-types/CleaningTypeForms.test.tsx` with exactly this content:
+
+```tsx
+import { render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { Form } from 'antd'
+import type { ReactNode } from 'react'
+import { describe, expect, it, vi } from 'vitest'
+import { CleaningTypeCreate } from '@/pages/cleaning-types/CleaningTypeCreate'
+import { CleaningTypeEdit } from '@/pages/cleaning-types/CleaningTypeEdit'
+
+const onFinish = vi.fn()
+const loaded = vi.hoisted((): { values: Record<string, unknown> } => ({ values: {} }))
+
+// Refine's useForm, reduced to a real antd form: Save submits it and onFinish receives the values
+// Refine would send. For the Edit page the loaded record is the form's initial values.
+vi.mock('@refinedev/antd', () => {
+  function useForm() {
+    const [form] = Form.useForm()
+    return {
+      formProps: { form, onFinish, initialValues: loaded.values },
+      saveButtonProps: {
+        onClick: () => {
+          form.submit()
+        },
+      },
+      query: { isLoading: false },
+    }
+  }
+  function Page({ children, saveButtonProps }: { children: ReactNode; saveButtonProps: object }) {
+    return (
+      <div>
+        {children}
+        <button type="button" {...saveButtonProps}>
+          Save
+        </button>
+      </div>
+    )
+  }
+  return { useForm, Create: Page, Edit: Page }
+})
+
+function dropdown() {
+  const element = document.querySelector<HTMLElement>(
+    '.ant-select-dropdown:not(.ant-select-dropdown-hidden)',
+  )
+  if (!element) throw new Error('the dropdown is not open')
+  return element
+}
+
+describe('CleaningTypeCreate', () => {
+  it('sends the grey default colour when none is picked', async () => {
+    loaded.values = {}
+    render(<CleaningTypeCreate />)
+    await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Window')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => {
+      expect(onFinish).toHaveBeenCalledWith({ name: 'Window', color_motif: 'default' })
+    })
+  })
+
+  it('sends the picked colour', async () => {
+    loaded.values = {}
+    render(<CleaningTypeCreate />)
+    await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Window')
+    await userEvent.click(screen.getByRole('combobox', { name: 'Color' }))
+    await userEvent.click(within(dropdown()).getByText('Lime'))
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => {
+      expect(onFinish).toHaveBeenCalledWith({ name: 'Window', color_motif: 'lime' })
+    })
+  })
+})
+
+describe('CleaningTypeEdit', () => {
+  it('shows the stored colour and sends the new one', async () => {
+    loaded.values = { name: 'Deep', color_motif: 'purple' }
+    render(<CleaningTypeEdit />)
+    expect(screen.getByText('Purple')).toHaveClass('ant-tag-purple')
+    await userEvent.click(screen.getByRole('combobox', { name: 'Color' }))
+    await userEvent.click(within(dropdown()).getByText('Red'))
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => {
+      expect(onFinish).toHaveBeenCalledWith({ name: 'Deep', color_motif: 'red' })
+    })
+  })
+})
+```
+
+Create `src/pages/cleaning-statuses/CleaningStatusForms.test.tsx` with exactly this content:
+
+```tsx
+import { render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { Form } from 'antd'
+import type { ReactNode } from 'react'
+import { describe, expect, it, vi } from 'vitest'
+import { CleaningStatusCreate } from '@/pages/cleaning-statuses/CleaningStatusCreate'
+import { CleaningStatusEdit } from '@/pages/cleaning-statuses/CleaningStatusEdit'
+
+const onFinish = vi.fn()
+const loaded = vi.hoisted((): { values: Record<string, unknown> } => ({ values: {} }))
+
+// Refine's useForm, reduced to a real antd form: Save submits it and onFinish receives the values
+// Refine would send. For the Edit page the loaded record is the form's initial values.
+vi.mock('@refinedev/antd', () => {
+  function useForm() {
+    const [form] = Form.useForm()
+    return {
+      formProps: { form, onFinish, initialValues: loaded.values },
+      saveButtonProps: {
+        onClick: () => {
+          form.submit()
+        },
+      },
+      query: { isLoading: false },
+    }
+  }
+  function Page({ children, saveButtonProps }: { children: ReactNode; saveButtonProps: object }) {
+    return (
+      <div>
+        {children}
+        <button type="button" {...saveButtonProps}>
+          Save
+        </button>
+      </div>
+    )
+  }
+  return { useForm, Create: Page, Edit: Page }
+})
+
+function dropdown() {
+  const element = document.querySelector<HTMLElement>(
+    '.ant-select-dropdown:not(.ant-select-dropdown-hidden)',
+  )
+  if (!element) throw new Error('the dropdown is not open')
+  return element
+}
+
+describe('CleaningStatusCreate', () => {
+  it('sends the grey default colour when none is picked', async () => {
+    loaded.values = {}
+    render(<CleaningStatusCreate />)
+    await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Cancelled')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => {
+      expect(onFinish).toHaveBeenCalledWith({ name: 'Cancelled', color_motif: 'default' })
+    })
+  })
+
+  it('sends the picked colour', async () => {
+    loaded.values = {}
+    render(<CleaningStatusCreate />)
+    await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Cancelled')
+    await userEvent.click(screen.getByRole('combobox', { name: 'Color' }))
+    await userEvent.click(within(dropdown()).getByText('Lime'))
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => {
+      expect(onFinish).toHaveBeenCalledWith({ name: 'Cancelled', color_motif: 'lime' })
+    })
+  })
+})
+
+describe('CleaningStatusEdit', () => {
+  it('shows the stored colour and sends the new one', async () => {
+    loaded.values = { name: 'Booked', color_motif: 'blue' }
+    render(<CleaningStatusEdit />)
+    expect(screen.getByText('Blue')).toHaveClass('ant-tag-blue')
+    await userEvent.click(screen.getByRole('combobox', { name: 'Color' }))
+    await userEvent.click(within(dropdown()).getByText('Red'))
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => {
+      expect(onFinish).toHaveBeenCalledWith({ name: 'Booked', color_motif: 'red' })
+    })
+  })
+})
+```
+
+**Gate:** `pnpm test`
+**Expect:** Vitest reports 19 files and 132 tests, all passing: `colorMotif.test.ts` 7, `ColorMotifSelect.test.tsx` 6, `CompanyForms.test.tsx` 3, `CleaningTypeForms.test.tsx` 3, `CleaningStatusForms.test.tsx` 3 and `CleaningJobList.test.tsx` 13. Anything else: stop and report.
+
+### Step 20. Playwright (edit one spec, create one)
+
+The new spec changes the seeded Deep cleaning type to red and puts it back to purple in a `finally` block, so it can be rerun.
+
+Edit 1 of 1 in `e2e/cleaning-jobs.spec.ts`. Find (it starts at line 65, `test('filters by date range, cleaning type and feedback, and clears them', async ({ page }) => {`):
+
+```ts
+  test('filters by date range, cleaning type and feedback, and clears them', async ({ page }) => {
+```
+
+Replace with:
+
+```ts
+  test('shows Company, Status and Cleaning Type as pills in their seeded colours', async ({
+    page,
+  }) => {
+    await signIn(page, 'user@example.com', 'user-password-123')
+    await openCleaningJobs(page)
+
+    // Columns: 0 Assignee, 1 Company, 2 Status, ... 6 Cleaning Type (see the header test).
+    // supabase/seeds/02_reference_data.sql gives every seeded row a colour other than the default.
+    const rows = await dataRows(page).count()
+    for (let i = 0; i < rows; i++) {
+      const cells = dataRows(page).nth(i).locator('td')
+      await expect(cells.nth(1).locator('.ant-tag')).toHaveClass(
+        /ant-tag-(geekblue|volcano|magenta|purple)/,
+      )
+      await expect(cells.nth(2).locator('.ant-tag')).toHaveClass(/ant-tag-(blue|cyan|orange|green)/)
+      await expect(cells.nth(2).locator('.ant-tag')).toHaveText(
+        /^(Booked|Confirmed|In Progress|Done)$/,
+      )
+      for (const tag of await cells.nth(6).locator('.ant-tag').all()) {
+        await expect(tag).not.toHaveClass(/ant-tag-default/)
+      }
+    }
+  })
+
+  test('filters by date range, cleaning type and feedback, and clears them', async ({ page }) => {
+```
+
+Create `e2e/color-motifs.spec.ts` with exactly this content:
+
+```ts
+import { test, expect, type Page } from '@playwright/test'
+
+// Local seed only (supabase/seeds/02_reference_data.sql): the Deep cleaning type is purple.
+const TYPE = 'Deep'
+const SEEDED_LABEL = 'Purple'
+const SEEDED_CLASS = /ant-tag-purple/
+
+async function signIn(page: Page, email: string, password: string) {
+  await page.goto('/login')
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Password').fill(password)
+  await page.getByRole('button', { name: /sign in/i }).click()
+  await expect(page.getByRole('link', { name: 'Cleaning types' })).toBeVisible()
+}
+
+// The visible dropdown (antd keeps closed ones in the page, hidden).
+function openDropdown(page: Page) {
+  return page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')
+}
+
+// Opens the cleaning type's Edit page, picks a colour by its label and saves.
+async function setTypeColor(page: Page, name: string, label: string) {
+  await page.goto('/cleaning-types')
+  await page.getByRole('row', { name }).getByRole('button', { name: 'edit' }).click()
+  // Wait for the record to load first, or the loaded value overwrites the picked one.
+  await expect(page.getByRole('textbox', { name: /Name$/ })).toHaveValue(name)
+  // Click the select itself: the chosen pill sits on top of its input.
+  await page.locator('.ant-form-item', { hasText: 'Color' }).locator('.ant-select').click()
+  await openDropdown(page)
+    .locator('.ant-select-item-option')
+    .getByText(label, { exact: true })
+    .click()
+  await page.getByRole('button', { name: /save/i }).click()
+  await expect(page.getByRole('columnheader', { name: 'Name' })).toBeVisible()
+}
+
+function typePill(page: Page, name: string) {
+  return page.getByRole('row', { name }).locator('.ant-tag', { hasText: name })
+}
+
+test.describe('Color motifs', () => {
+  test.use({ storageState: { cookies: [], origins: [] } })
+
+  test('a User sees the colour but cannot edit a cleaning type', async ({ page }) => {
+    await signIn(page, 'user@example.com', 'user-password-123')
+    await page.goto('/cleaning-types')
+    await expect(typePill(page, TYPE)).toHaveClass(SEEDED_CLASS)
+    await expect(
+      page.getByRole('row', { name: TYPE }).getByRole('button', { name: 'edit' }),
+    ).toBeDisabled()
+  })
+
+  test('an Admin changes a cleaning type colour and the jobs list shows it', async ({ page }) => {
+    test.setTimeout(60_000)
+    await signIn(page, 'admin@example.com', 'admin-password-123')
+    await page.goto('/cleaning-types')
+    await expect(typePill(page, TYPE)).toHaveClass(SEEDED_CLASS)
+
+    try {
+      await setTypeColor(page, TYPE, 'Red')
+      await expect(typePill(page, TYPE)).toHaveClass(/ant-tag-red/)
+
+      // The Cleaning Jobs list, filtered to Deep jobs: every Deep pill is red now.
+      await page.getByRole('link', { name: 'Cleaning Jobs' }).click()
+      await expect(page.locator('tbody tr.ant-table-row').first()).toBeVisible()
+      await page.getByRole('button', { name: 'Filters' }).click()
+      const type = page.getByRole('combobox', { name: 'Cleaning type' })
+      await type.click()
+      await type.fill(TYPE)
+      await openDropdown(page).getByText(TYPE, { exact: true }).click()
+      await expect(
+        page.getByRole('group', { name: 'Active filters' }).getByText(`Cleaning type: ${TYPE}`),
+      ).toBeVisible()
+      const pills = page.locator('tbody tr.ant-table-row .ant-tag', { hasText: /^Deep$/ })
+      await expect(pills.first()).toBeVisible()
+      for (const pill of await pills.all()) await expect(pill).toHaveClass(/ant-tag-red/)
+    } finally {
+      // Put the seeded colour back so reruns start the same way.
+      await setTypeColor(page, TYPE, SEEDED_LABEL)
+      await expect(typePill(page, TYPE)).toHaveClass(SEEDED_CLASS)
+    }
+  })
+})
+```
+
+**Gate:** `pnpm exec playwright test e2e/cleaning-jobs.spec.ts e2e/color-motifs.spec.ts && pnpm exec playwright test e2e/color-motifs.spec.ts && docker exec supabase_db_dispatch-tracker psql -U postgres -Atc "select color_motif from public.cleaning_types where name = 'Deep'"`
+**Expect:** the first run reports `9 passed` (the setup, 6 Cleaning Jobs tests and 2 colour tests), the rerun reports `3 passed`, and `psql` prints `purple`. Anything else: stop and report.
+
+**Gate:** `pnpm exec playwright test`
+**Expect:** 18 tests; all pass when the edge runtime is running (`pnpm exec supabase functions serve`). Without it, only `edge-function.spec.ts` fails and 17 pass. Any other failure: stop and report.
+
+### Step 21. Gate: web
+
+```bash
+npx prettier --check src e2e && pnpm typecheck && pnpm lint && pnpm test
+```
+
+**Expect:** all four exit 0 and Vitest reports 19 files and 132 tests. If `prettier --check` fails only on files from this phase, run `npx prettier --write` on those files and re-run; any other failure: stop and report.
+
+```bash
+git status --short
+```
+
+**Expect:** modified: `supabase/seeds/02_reference_data.sql`, `supabase/tests/database/cleaning_jobs.test.sql`, `supabase/tests/database/get_cleaning_jobs.test.sql`, `src/types/database.types.ts`, `src/types/db.ts`, `src/pages/cleaning-jobs/CleaningJobList.tsx`, `src/pages/cleaning-jobs/CleaningJobList.test.tsx`, the six Create and Edit pages and three List pages of companies, cleaning types and cleaning statuses, `e2e/cleaning-jobs.spec.ts`; new: `supabase/migrations/0029_color_motifs.sql`, `supabase/tests/database/color_motifs.test.sql`, `src/features/color-motif/`, `src/components/color-motif/`, the three `*Forms.test.tsx` files, `e2e/color-motifs.spec.ts`; plus plan files under `.claude/plans/`. Anything else: stop and report.
+
+### Step 22. Manual check (no code)
+
+Run `pnpm dev` and sign in as `admin@example.com`.
+
+**Expect:**
+- **Cleaning Jobs:** Company, Status and each Cleaning Type show as coloured pills with their text (for example Booked blue, Done green, Deep purple). Assignee tags stay grey. Every pill still reads as text (colour is never the only signal).
+- **Cleaning types:** each name shows as its pill. Edit Deep: the "Color" field shows "Purple"; its list shows every colour as a pill with its name. Pick Red, save: the list and the jobs list show Deep in red. Put it back to Purple.
+- **Companies** and **Cleaning statuses:** the same "Color" field on Create and Edit; a new row saved without picking shows the grey pill.
+- Sign in as `user@example.com`: Cleaning types and Cleaning statuses show the pills but their Edit and Create buttons are disabled.
+
+Report what you saw.
+
+### Step 23. Document the architecture (create file, edit `README.md`)
+
+Create `docs/architecture/0007-Color-Motifs.md` with exactly this content:
+
+```md
+# 0007 Color motifs: one palette for the pills of companies, cleaning types and statuses
+
+- Ticket: T3C-F35 (Phase 2)
+- Plan: `.claude/plans/backend/T3C-F35-Cleaning-Jobs-List.md`
+- Date: 2026-11-27
+- Status: implemented
+- Builds on: [0004 Cleaning jobs list function](0004-Cleaning-Jobs-List-Function.md)
+
+## Summary
+
+`companies`, `cleaning_types` and `cleaning_statuses` each have a `color_motif` column. The Cleaning
+Jobs list shows Company, Status and each Cleaning Type as an Ant Design `Tag` in that colour, and an
+Admin picks the colour on the Create and Edit pages of each resource.
+
+## Why
+
+The owner asked for a distinguishing colour on the pills. A fixed palette of Ant Design's preset tag
+colours works with `Tag color`, adapts to the light and dark themes and leaves no free-form hex value
+to validate.
+
+## How it works
+
+- The palette is `default` (the neutral grey tag) plus `magenta`, `red`, `volcano`, `orange`, `gold`,
+  `lime`, `green`, `cyan`, `blue`, `geekblue` and `purple`. It exists twice, once per side:
+  `public.color_motifs()` in the database (`0029_color_motifs.sql`) and `COLOR_MOTIFS` in
+  `src/features/color-motif/colorMotif.ts`.
+- They cannot drift: `colorMotif.test.ts` (Vitest) reads the array from the newest migration that
+  defines `public.color_motifs()` and compares it with `COLOR_MOTIFS`; `color_motifs.test.sql`
+  (pgTAP) compares the function with the same list and checks that every table's constraint calls it.
+- Each column is `text not null default 'default'` with a check constraint
+  `color_motif = any (public.color_motifs())`. The existing update policies (`has_permission`) decide
+  who may change it: Admin and Super Admin, not User.
+- `get_cleaning_jobs` returns `company_color`, `status_color` and each cleaning type as
+  `{"name", "color"}`. Its return type changed, so `0029` drops and recreates it with the same
+  arguments, filters, sorts and paging.
+- The web never trusts the stored value blindly: `toColorMotif` turns anything unknown into
+  `default`. `ColorMotifTag` (`src/components/color-motif/`) draws every pill and always keeps its
+  text, so colour is never the only signal. `ColorMotifSelect` is the "Color" field of the six
+  Create and Edit pages; each option is the pill itself.
+- The local seed (`02_reference_data.sql`) gives every seeded row its own colour; statuses follow the
+  life cycle (Booked blue, Confirmed cyan, In Progress orange, Done green).
+
+## Known limits
+
+- Changing the palette takes a migration that replaces `public.color_motifs()` and an edit of
+  `COLOR_MOTIFS`, in the same change. Removing a colour that rows still use fails the migration until
+  those rows are moved.
+- Preset colours are not checked for contrast by this repo; Ant Design's preset tags are designed to
+  be readable in both themes.
+- The colours of rows created on a hosted database start as `default` until an Admin sets them.
+```
+
+`docs/architecture/0004-Cleaning-Jobs-List-Function.md` stays as it is: it does not describe the returned columns, so nothing in it becomes wrong.
+
+Edit 1 of 2 in `README.md`. Find (it starts at line 34, `Local data: [0006 Seed data](docs/architecture/0006-Local-Seed-Data.md).`):
+
+```md
+Local data: [0006 Seed data](docs/architecture/0006-Local-Seed-Data.md).
+```
+
+Replace with:
+
+```md
+Local data: [0006 Seed data](docs/architecture/0006-Local-Seed-Data.md). Pill colours: [0007 Color motifs](docs/architecture/0007-Color-Motifs.md).
+```
+
+Edit 2 of 2 in `README.md`. Find (it starts at line 77, `features/cleaning-jobs/      data access, React Query hooks and helpers for the Cleaning Jobs list`):
+
+```md
+  features/cleaning-jobs/      data access, React Query hooks and helpers for the Cleaning Jobs list
+```
+
+Replace with:
+
+```md
+  features/cleaning-jobs/      data access, React Query hooks and helpers for the Cleaning Jobs list
+  features/color-motif/        the pill colour palette (COLOR_MOTIFS) shared by every list and form
+```
+
+**Gate:** `ls docs/architecture && grep -c "0007-Color-Motifs.md" README.md && npx prettier --check README.md docs/architecture/0007-Color-Motifs.md`
+**Expect:** the files `0001` to `0007` are listed, `grep` prints `1`, and prettier reports `All matched files use Prettier code style!`. Anything else: stop and report.
+
 ## Rollback
 
 - Before commit: `git switch main && git branch -D feat/T3C-F35-Cleaning-Jobs-List`, then `pnpm db:reset`.
 - After merge, if a hosted DB already has the migrations: add `0127_drop_cleaning_job_rpc.sql` containing `drop function public.get_cleaning_jobs(uuid[], uuid[], uuid[], uuid[], text, integer[], text, date, date, text, text, text, integer, integer);`, `drop function public.get_client_feedbacks_for_cleaning_job_id(uuid);`, `drop function public.get_complete_address_for_property_id(uuid);` and `drop function public.get_cleaners_for_cleaning_job_id(uuid);` (in that order), and `0128_drop_preferred_time_zone.sql` containing `alter table public.profiles drop column preferred_time_zone;` and `drop function public.is_valid_time_zone(text);` (in that order: the column check needs the function). Never edit or delete an applied migration.
+
+### Rollback (Phase 2)
+
+- Before commit: put the edited files back, remove the new ones and reset the local database:
+
+```bash
+git restore supabase/seeds/02_reference_data.sql supabase/tests/database/cleaning_jobs.test.sql supabase/tests/database/get_cleaning_jobs.test.sql src/types/database.types.ts src/types/db.ts src/pages e2e/cleaning-jobs.spec.ts README.md
+rm -r supabase/migrations/0029_color_motifs.sql supabase/tests/database/color_motifs.test.sql src/features/color-motif src/components/color-motif src/pages/companies/CompanyForms.test.tsx src/pages/cleaning-types/CleaningTypeForms.test.tsx src/pages/cleaning-statuses/CleaningStatusForms.test.tsx e2e/color-motifs.spec.ts docs/architecture/0007-Color-Motifs.md
+pnpm db:reset
+```
+
+- After merge, if a hosted DB already has `0029_color_motifs.sql`: never edit or delete it; add `supabase/migrations/0129_drop_color_motifs.sql`. It first recreates the old `get_cleaning_jobs` (the block of `0028_cleaning_job_rpc.sql` lines 75 to 246, with `create or replace` written as `create`, and its revoke and grant), then drops the columns and the palette function. In the same change, put the `src/` and `e2e/` files of Phase 2 back to their Phase 1 versions (`git checkout <last Phase 1 commit> -- <file>`) and delete the new ones, because the old function returns no colours. Keep `0029` and the seed as they are (the seed then needs its `color_motif` values removed too, or `db:reset` fails on a missing column). The file, as checked on 2026-11-27 (run inside a transaction, then rolled back):
+
+```sql
+-- 0129_drop_color_motifs: undoes 0029_color_motifs.
+-- 1. Put back get_cleaning_jobs as 0028 defined it (no colour columns). Its return type differs,
+--    so the 0029 version is dropped first.
+drop function public.get_cleaning_jobs(uuid[], uuid[], uuid[], uuid[], text, integer[], text, date, date, text, text, text, integer, integer);
+
+create function public.get_cleaning_jobs(
+  p_cleaner_ids       uuid[]  default null,
+  p_company_ids       uuid[]  default null,
+  p_client_ids        uuid[]  default null,
+  p_cleaning_type_ids uuid[]  default null,
+  p_feedback_search   text    default null,
+  p_ratings           integer[] default null,
+  p_date_range        text    default null,
+  p_date_from         date    default null,
+  p_date_to           date    default null,
+  p_time_zone         text    default 'America/Edmonton',
+  p_sort_by           text    default 'schedule',
+  p_sort_dir          text    default 'desc',
+  p_page              integer default 1,
+  p_page_size         integer default 10
+)
+returns table (
+  id             uuid,
+  schedule       timestamptz,
+  rate           numeric,
+  description    text,
+  status_name    text,
+  client_id      uuid,
+  client_name    text,
+  company_name   text,
+  address        text,
+  cleaners       jsonb,
+  cleaning_types jsonb,
+  feedbacks      jsonb,
+  avg_rating     numeric,
+  total_count    bigint
+)
+language plpgsql
+stable
+security invoker
+set search_path = public
+as $$
+#variable_conflict use_column
+declare
+  v_size integer := least(greatest(coalesce(p_page_size, 10), 1), 100);
+  v_offset integer := (greatest(coalesce(p_page, 1), 1) - 1) * v_size;
+  v_search text := nullif(trim(p_feedback_search), '');
+  v_tz     text := coalesce(p_time_zone, 'America/Edmonton');
+  v_today  timestamp;
+  v_from   timestamptz;
+  v_to     timestamptz;
+begin
+  if p_sort_by is null or p_sort_by not in ('schedule', 'client', 'cleaning_type', 'rating') then
+    raise exception 'invalid sort column: %', p_sort_by using errcode = '22023';
+  end if;
+  if p_sort_dir is null or p_sort_dir not in ('asc', 'desc') then
+    raise exception 'invalid sort direction: %', p_sort_dir using errcode = '22023';
+  end if;
+
+  if not public.is_valid_time_zone(v_tz) then
+    raise exception 'invalid time zone: %', v_tz using errcode = '22023';
+  end if;
+
+  -- Midnight today in the user's time zone, as a plain timestamp. "timestamp at time zone"
+  -- turns a wall clock time in that zone back into a timestamptz.
+  v_today := date_trunc('day', now() at time zone v_tz);
+  if p_date_range is not null then
+    case p_date_range
+      when 'next_month' then
+        v_from := (date_trunc('month', v_today) + interval '1 month') at time zone v_tz;
+        v_to   := (date_trunc('month', v_today) + interval '2 months') at time zone v_tz;
+      when 'current_week' then
+        v_from := date_trunc('week', v_today) at time zone v_tz;
+        v_to   := (date_trunc('week', v_today) + interval '7 days') at time zone v_tz;
+      when 'current_month' then
+        v_from := date_trunc('month', v_today) at time zone v_tz;
+        v_to   := (date_trunc('month', v_today) + interval '1 month') at time zone v_tz;
+      when 'last_3_months' then
+        v_from := (v_today - interval '3 months') at time zone v_tz;
+        v_to   := (v_today + interval '1 day') at time zone v_tz;
+      when 'last_6_months' then
+        v_from := (v_today - interval '6 months') at time zone v_tz;
+        v_to   := (v_today + interval '1 day') at time zone v_tz;
+      when 'custom' then
+        if p_date_from is not null and p_date_to is not null and p_date_from > p_date_to then
+          raise exception 'date range starts after it ends' using errcode = '22023';
+        end if;
+        v_from := p_date_from::timestamp at time zone v_tz;
+        v_to   := (p_date_to + 1)::timestamp at time zone v_tz;
+      else
+        raise exception 'invalid date range: %', p_date_range using errcode = '22023';
+    end case;
+  end if;
+
+  return query
+  with ranked as (
+    select
+      j.id,
+      count(*) over () as total_count,
+      row_number() over (
+        order by
+          case when p_sort_by = 'schedule' and p_sort_dir = 'asc'  then j.schedule end asc  nulls last,
+          case when p_sort_by = 'schedule' and p_sort_dir = 'desc' then j.schedule end desc nulls last,
+          case when p_sort_by = 'client' and p_sort_dir = 'asc'  then lower(c.name) end asc  nulls last,
+          case when p_sort_by = 'client' and p_sort_dir = 'desc' then lower(c.name) end desc nulls last,
+          case when p_sort_by = 'cleaning_type' and p_sort_dir = 'asc' then (
+            select string_agg(ct.name, ', ' order by ct.name)
+            from public.cleaning_job_cleaning_types jct
+            join public.cleaning_types ct on ct.id = jct.cleaning_type_id
+            where jct.cleaning_job_id = j.id) end asc nulls last,
+          case when p_sort_by = 'cleaning_type' and p_sort_dir = 'desc' then (
+            select string_agg(ct.name, ', ' order by ct.name)
+            from public.cleaning_job_cleaning_types jct
+            join public.cleaning_types ct on ct.id = jct.cleaning_type_id
+            where jct.cleaning_job_id = j.id) end desc nulls last,
+          case when p_sort_by = 'rating' and p_sort_dir = 'asc' then (
+            select avg(f.rating) from public.cleaning_feedbacks f
+            where f.cleaning_job_id = j.id) end asc nulls last,
+          case when p_sort_by = 'rating' and p_sort_dir = 'desc' then (
+            select avg(f.rating) from public.cleaning_feedbacks f
+            where f.cleaning_job_id = j.id) end desc nulls last,
+          j.schedule desc,
+          j.id
+      ) as pos
+    from public.cleaning_jobs j
+    join public.clients c on c.id = j.client_id
+    where (v_from is null or j.schedule >= v_from)
+      and (v_to is null or j.schedule < v_to)
+      and (coalesce(cardinality(p_client_ids), 0) = 0 or j.client_id = any (p_client_ids))
+      and (coalesce(cardinality(p_company_ids), 0) = 0 or c.company_id = any (p_company_ids))
+      and (coalesce(cardinality(p_cleaner_ids), 0) = 0 or exists (
+            select 1 from public.cleaning_job_assignments a
+            where a.cleaning_job_id = j.id and a.cleaner_id = any (p_cleaner_ids)))
+      and (coalesce(cardinality(p_cleaning_type_ids), 0) = 0 or exists (
+            select 1 from public.cleaning_job_cleaning_types jct
+            where jct.cleaning_job_id = j.id and jct.cleaning_type_id = any (p_cleaning_type_ids)))
+      and (v_search is null or exists (
+            select 1 from public.cleaning_feedbacks f
+            where f.cleaning_job_id = j.id
+              and strpos(lower(f.feedback), lower(v_search)) > 0))
+      and (coalesce(cardinality(p_ratings), 0) = 0 or exists (
+            select 1 from public.cleaning_feedbacks f
+            where f.cleaning_job_id = j.id and f.rating = any (p_ratings)))
+  )
+  select
+    j.id,
+    j.schedule,
+    j.rate,
+    j.description,
+    s.name,
+    c.id,
+    c.name,
+    co.name,
+    public.get_complete_address_for_property_id(j.property_id),
+    (select coalesce(jsonb_agg(jsonb_build_object('cleaner_id', g.cleaner_id, 'full_name', g.full_name)
+                              order by g.full_name), '[]'::jsonb)
+       from public.get_cleaners_for_cleaning_job_id(j.id) g),
+    (select coalesce(jsonb_agg(ct.name order by ct.name), '[]'::jsonb)
+       from public.cleaning_job_cleaning_types jct
+       join public.cleaning_types ct on ct.id = jct.cleaning_type_id
+      where jct.cleaning_job_id = j.id),
+    (select coalesce(jsonb_agg(jsonb_build_object('rating', f.rating, 'feedback', f.feedback,
+                                                  'created_at', f.created_at)
+                              order by f.created_at desc, f.id), '[]'::jsonb)
+       from public.get_client_feedbacks_for_cleaning_job_id(j.id) f),
+    (select round(avg(f.rating), 1) from public.cleaning_feedbacks f
+      where f.cleaning_job_id = j.id),
+    r.total_count
+  from ranked r
+  join public.cleaning_jobs j on j.id = r.id
+  join public.clients c on c.id = j.client_id
+  join public.companies co on co.id = c.company_id
+  join public.cleaning_statuses s on s.id = j.cleaning_status_id
+  where r.pos > v_offset and r.pos <= v_offset + v_size
+  order by r.pos;
+end;
+$$;
+
+revoke execute on function public.get_cleaning_jobs(uuid[], uuid[], uuid[], uuid[], text, integer[], text, date, date, text, text, text, integer, integer) from public, anon;
+grant  execute on function public.get_cleaning_jobs(uuid[], uuid[], uuid[], uuid[], text, integer[], text, date, date, text, text, text, integer, integer) to authenticated;
+
+-- 2. The columns (their check constraints go with them), then the palette function they used.
+alter table public.companies drop column color_motif;
+alter table public.cleaning_types drop column color_motif;
+alter table public.cleaning_statuses drop column color_motif;
+drop function public.color_motifs();
+```
+
+- To roll back both phases on a hosted DB, do not add `0129`: add Phase 1's `0127` and `0128`, and put the last four statements of the `0129` above (the three `drop column` lines and `drop function public.color_motifs();`) at the end of `0127`.
 
 ## Conventional commits
 
@@ -2607,8 +5444,40 @@ Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 3. `feat(web): add Cleaning Jobs list with filters and time zone`
    Files: `src/types/db.ts`, `src/App.tsx`, `src/features/cleaning-jobs/timeZone.ts`, `src/features/cleaning-jobs/api.ts`, `src/features/cleaning-jobs/hooks.ts`, `src/features/cleaning-jobs/filterChips.ts`, `src/features/cleaning-jobs/usePreferredTimeZone.ts`, `src/components/cleaning-jobs/TimeZonePicker.tsx`, `src/components/cleaning-jobs/CleaningJobFilterBar.tsx`, `src/components/cleaning-jobs/FeedbackModal.tsx`, `src/pages/cleaning-jobs/CleaningJobList.tsx`
 4. `test(web): cover time zone formatting and cleaning job hooks`
-   Files: `src/features/cleaning-jobs/timeZone.test.ts`, `src/features/cleaning-jobs/api.test.ts`, `src/features/cleaning-jobs/hooks.test.tsx`, `src/features/cleaning-jobs/filterChips.test.ts`
+   Files: `src/features/cleaning-jobs/timeZone.test.ts`, `src/features/cleaning-jobs/api.test.ts`, `src/features/cleaning-jobs/hooks.test.tsx`, `src/features/cleaning-jobs/filterChips.test.ts`, `src/features/cleaning-jobs/usePreferredTimeZone.test.tsx`, `src/components/cleaning-jobs/*.test.tsx`, `src/pages/cleaning-jobs/CleaningJobList.test.tsx`, `e2e/cleaning-jobs.spec.ts`
 5. `docs(plans): add T3C-F35 plan`
    Files: `.claude/plans/backend/T3C-F35-Cleaning-Jobs-List.md`
 
 PR title: `feat(web): add Cleaning Jobs list` (body from `.github/pull_request_template.md`, ending with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`). Merge with a normal merge commit.
+
+### Conventional commits (Phase 2)
+
+Branch: the Phase 1 branch, `feat/T3C-B15-B16-B18-B19-B33-F35-Cleaning-Jobs` (no new branch). Stage explicit paths only; each file belongs to exactly one commit, so whole files can be staged. Each commit leaves the suites green (commit 2 carries the web follow-up of the row shape for that reason, see the decisions). Every commit ends with:
+
+```
+Refs: T3C-F35
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+```
+
+1. `test(db): pin the default status test to its own job`
+   Files: `supabase/tests/database/cleaning_jobs.test.sql`
+2. `feat(db): add color motifs and return them from get_cleaning_jobs`
+   Body: `The row shape of get_cleaning_jobs changes, so the type override, the list page and its test fixture move with it and every suite stays green.`
+   Files: `supabase/migrations/0029_color_motifs.sql`, `supabase/seeds/02_reference_data.sql`, `src/types/database.types.ts`, `supabase/tests/database/get_cleaning_jobs.test.sql`, `src/types/db.ts`, `src/features/color-motif/colorMotif.ts`, `src/components/color-motif/ColorMotifTag.tsx`, `src/pages/cleaning-jobs/CleaningJobList.tsx`, `src/pages/cleaning-jobs/CleaningJobList.test.tsx`
+3. `test(db): cover color motifs`
+   Files: `supabase/tests/database/color_motifs.test.sql`
+4. `feat(web): pick a pill colour on the company, type and status forms`
+   Files: `src/components/color-motif/ColorMotifSelect.tsx`, `src/pages/companies/CompanyCreate.tsx`, `src/pages/companies/CompanyEdit.tsx`, `src/pages/companies/CompanyList.tsx`, `src/pages/cleaning-types/CleaningTypeCreate.tsx`, `src/pages/cleaning-types/CleaningTypeEdit.tsx`, `src/pages/cleaning-types/CleaningTypeList.tsx`, `src/pages/cleaning-statuses/CleaningStatusCreate.tsx`, `src/pages/cleaning-statuses/CleaningStatusEdit.tsx`, `src/pages/cleaning-statuses/CleaningStatusList.tsx`
+5. `test(web): cover the colour palette, the select and the forms`
+   Files: `src/features/color-motif/colorMotif.test.ts`, `src/components/color-motif/ColorMotifSelect.test.tsx`, `src/pages/companies/CompanyForms.test.tsx`, `src/pages/cleaning-types/CleaningTypeForms.test.tsx`, `src/pages/cleaning-statuses/CleaningStatusForms.test.tsx`
+6. `test(e2e): check pill colours and an admin colour change`
+   Files: `e2e/cleaning-jobs.spec.ts`, `e2e/color-motifs.spec.ts`
+7. `docs(agents): document the color motifs architecture`
+   Files: `docs/architecture/0007-Color-Motifs.md`, `README.md`
+8. `docs(plans): shift later table plans past 0029_color_motifs`
+   Files: `.claude/plans/backend/T3C-B0-Users-Table.md`, `.claude/plans/backend/T3C-B17-Preferred-Cleaners-Table.md`, `.claude/plans/backend/T3C-B26-Cleaning-Job-Areas-Table.md`, `.claude/plans/backend/T3C-B27-Cleaning-Job-Items-Table.md`, `.claude/plans/backend/T3C-B28-S29-Invoice-Statuses-Table.md`, `.claude/plans/backend/T3C-B30-Invoice-Templates-Table.md`, `.claude/plans/backend/T3C-S31-Invoice-Templates-Seed.md`, `.claude/plans/backend/T3C-B32-Invoices-Table.md`
+9. `docs(plans): add the color motifs phase to the T3C-F35 plan`
+   Files: `.claude/plans/backend/T3C-F35-Cleaning-Jobs-List.md`
+
+The Phase 2 commits go on the same pull request as Phase 1 (PR title `feat(web): add Cleaning Jobs list`, unchanged). Merge with a normal merge commit.
