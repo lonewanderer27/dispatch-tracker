@@ -12,13 +12,15 @@ export type Todo = Tables<'todos'>
 export type Company = Tables<'companies'>
 export type Client = Tables<'clients'>
 export type Contact = Tables<'contacts'>
-export type ClientRow = Client & { companies: { name: string } | null }
+export type ClientRow = Client & { companies: { name: string; color_motif: string } | null }
 export type ContactRow = Contact & { clients: { name: string } | null }
 export type Profile = Tables<'profiles'>
 export type UserRow = Profile & { roles: { name: string } | null }
 export type Cleaner = Tables<'cleaners'>
 export type CompanyCleaner = Tables<'company_cleaners'>
-export type CleanerCompanyLink = CompanyCleaner & { companies: { name: string } | null }
+export type CleanerCompanyLink = CompanyCleaner & {
+  companies: { name: string; color_motif: string } | null
+}
 export type CleaningType = Tables<'cleaning_types'>
 export type CleaningStatus = Tables<'cleaning_statuses'>
 export type Area = Tables<'areas'>

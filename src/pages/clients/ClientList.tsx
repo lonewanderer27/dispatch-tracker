@@ -1,11 +1,12 @@
 import { DeleteButton, EditButton, List, useTable } from '@refinedev/antd'
 import { Space, Table } from 'antd'
 import type { ClientRow } from '@/types/db'
+import { CompanyTag } from '@/components/company/CompanyTag'
 
 export function ClientList() {
   const { tableProps } = useTable<ClientRow>({
     syncWithLocation: true,
-    meta: { select: '*, companies(name)' },
+    meta: { select: '*, companies(name, color_motif)' },
     sorters: { initial: [{ field: 'name', order: 'asc' }] },
   })
 
@@ -15,7 +16,7 @@ export function ClientList() {
         <Table.Column<ClientRow> dataIndex="name" title="Name" sorter />
         <Table.Column<ClientRow>
           title="Company"
-          render={(_, record) => record.companies?.name ?? 'Unknown'}
+          render={(_, record) => <CompanyTag company={record.companies} />}
         />
         <Table.Column<ClientRow>
           title="Actions"

@@ -17,6 +17,7 @@ import { CleaningJobFilterBar } from '@/components/cleaning-jobs/CleaningJobFilt
 import { FeedbackModal } from '@/components/cleaning-jobs/FeedbackModal'
 import { TimeZonePicker } from '@/components/cleaning-jobs/TimeZonePicker'
 import { ColorMotifTag } from '@/components/color-motif/ColorMotifTag'
+import { CompanyTag } from '@/components/company/CompanyTag'
 
 const CAD = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' })
 const SORT_KEYS: readonly CleaningJobSortKey[] = ['schedule', 'client', 'cleaning_type', 'rating']
@@ -127,7 +128,9 @@ export function CleaningJobList() {
         <Table.Column<CleaningJobListRow>
           title="Company"
           render={(_, record) => (
-            <ColorMotifTag motif={record.company_color}>{record.company_name}</ColorMotifTag>
+            <CompanyTag
+              company={{ name: record.company_name, color_motif: record.company_color }}
+            />
           )}
         />
         <Table.Column<CleaningJobListRow>

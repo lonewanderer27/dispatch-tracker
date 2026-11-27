@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useDelete, useList } from '@refinedev/core'
 import { List, useTable } from '@refinedev/antd'
-import { Modal, Select, Space, Table, Tag, Typography } from 'antd'
+import { Modal, Select, Space, Table, Typography } from 'antd'
 import type { CleanerCompanyLink, CleanerWithCompanies, Company } from '@/types/db'
+import { CompanyTag } from '@/components/company/CompanyTag'
 import { matchesCompanyFilter, NO_COMPANY } from './companyFilter'
 
 // One row per cleaner. Each company a cleaner works for is a tag, and removing the tag removes
@@ -12,7 +13,7 @@ export function CompanyCleanerList() {
   const { tableProps } = useTable<CleanerWithCompanies>({
     resource: 'cleaners',
     pagination: { mode: 'off' },
-    meta: { select: '*, company_cleaners(id, company_id, companies(name))' },
+    meta: { select: '*, company_cleaners(id, company_id, companies(name, color_motif))' },
     sorters: { initial: [{ field: 'last_name', order: 'asc' }] },
   })
   const { result: companies } = useList<Company>({
@@ -71,16 +72,15 @@ export function CompanyCleanerList() {
             return (
               <Space wrap>
                 {record.company_cleaners.map((link) => (
-                  <Tag
+                  <CompanyTag
                     key={link.id}
+                    company={link.companies}
                     closable
                     onClose={(event) => {
                       event.preventDefault()
                       confirmRemove(link, name)
                     }}
-                  >
-                    {link.companies?.name ?? 'Unknown'}
-                  </Tag>
+                  />
                 ))}
               </Space>
             )
