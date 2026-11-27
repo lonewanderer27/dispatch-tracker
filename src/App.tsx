@@ -6,7 +6,12 @@ import routerProvider, {
   DocumentTitleHandler,
   UnsavedChangesNotifier,
 } from '@refinedev/react-router'
-import { DashboardOutlined, CheckSquareOutlined, TeamOutlined } from '@ant-design/icons'
+import {
+  DashboardOutlined,
+  CheckSquareOutlined,
+  TeamOutlined,
+  ShopOutlined,
+} from '@ant-design/icons'
 import { ConfigProvider, theme } from 'antd'
 import { Navigate, Outlet, Route, Routes } from 'react-router'
 import { authProvider } from '@/providers/authProvider'
@@ -17,6 +22,9 @@ import { TodoList } from '@/pages/todos/TodoList'
 import { TodoCreate } from '@/pages/todos/TodoCreate'
 import { TodoEdit } from '@/pages/todos/TodoEdit'
 import { TodoShow } from '@/pages/todos/TodoShow'
+import { CompanyList } from '@/pages/companies/CompanyList'
+import { CompanyCreate } from '@/pages/companies/CompanyCreate'
+import { CompanyEdit } from '@/pages/companies/CompanyEdit'
 import { UserList } from '@/pages/users/UserList'
 import { UserEdit } from '@/pages/users/UserEdit'
 
@@ -39,6 +47,13 @@ const resources: ResourceProps[] = [
     list: '/users',
     edit: '/users/edit/:id',
     meta: { label: 'Users', icon: <TeamOutlined /> },
+  },
+  {
+    name: 'companies',
+    list: '/companies',
+    create: '/companies/create',
+    edit: '/companies/edit/:id',
+    meta: { label: 'Companies', icon: <ShopOutlined /> },
   },
 ]
 
@@ -78,6 +93,11 @@ export default function App() {
               <Route path="create" element={<TodoCreate />} />
               <Route path="edit/:id" element={<TodoEdit />} />
               <Route path="show/:id" element={<TodoShow />} />
+            </Route>
+            <Route path="/companies">
+              <Route index element={<CompanyList />} />
+              <Route path="create" element={<CompanyCreate />} />
+              <Route path="edit/:id" element={<CompanyEdit />} />
             </Route>
             <Route
               path="/users"
