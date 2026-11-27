@@ -81,7 +81,7 @@ select ok(
 
 -- Constraints (as owner).
 select is(
-  (select cleaning_status_id from public.cleaning_jobs limit 1),
+  (select cleaning_status_id from public.cleaning_jobs where client_id = 'c1000000-0000-0000-0000-000000000001'),
   (select id from public.cleaning_statuses where name = 'Booked'),
   'new jobs default to the Booked status'
 );
