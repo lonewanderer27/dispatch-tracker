@@ -62,6 +62,28 @@ test.describe('Cleaning Jobs', () => {
     await expect(page.locator('.ant-pagination-item').last()).not.toHaveText('1')
   })
 
+  test('shows Company, Status and Cleaning Type as pills in their seeded colours', async ({
+    page,
+  }) => {
+    await signIn(page, 'user@example.com', 'user-password-123')
+    await openCleaningJobs(page)
+
+    // Columns: 0 Assignee, 1 Company, 2 Status, ... 6 Cleaning Type (see the header test).
+    // supabase/seeds/02_reference_data.sql gives every seeded row a colour other than the default.
+    const rows = await dataRows(page).count()
+    for (let i = 0; i < rows; i++) {
+      const cells = dataRows(page).nth(i).locator('td')
+      await expect(cells.nth(1).locator('.ant-tag')).toHaveClass(/ant-tag-(red|cyan|magenta|blue)/)
+      await expect(cells.nth(2).locator('.ant-tag')).toHaveClass(/ant-tag-(blue|cyan|orange|green)/)
+      await expect(cells.nth(2).locator('.ant-tag')).toHaveText(
+        /^(Booked|Confirmed|In Progress|Done)$/,
+      )
+      for (const tag of await cells.nth(6).locator('.ant-tag').all()) {
+        await expect(tag).not.toHaveClass(/ant-tag-default/)
+      }
+    }
+  })
+
   test('filters by date range, cleaning type and feedback, and clears them', async ({ page }) => {
     await signIn(page, 'user@example.com', 'user-password-123')
     await openCleaningJobs(page)
