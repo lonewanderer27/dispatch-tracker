@@ -1,7 +1,6 @@
 import { useGetIdentity } from '@refinedev/core'
 import { Flex, Typography } from 'antd'
 import { EdgeFunctionCard } from '@/features/dashboard/components/EdgeFunctionCard'
-import { RpcCard } from '@/features/dashboard/components/RpcCard'
 
 interface Identity {
   name?: string
@@ -20,7 +19,6 @@ export function DashboardPage() {
       </Typography.Title>
       <Flex gap="large" wrap>
         <EdgeFunctionCard />
-        <RpcCard />
       </Flex>
     </Flex>
   )

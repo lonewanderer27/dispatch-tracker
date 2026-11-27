@@ -2,7 +2,7 @@
 -- Run with: pnpm test:db   (supabase test db)
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(38);
+select plan(36);
 
 -- Fixed test identities. The whole file runs in one transaction and rolls back.
 -- Alice is a User, Carol is an Admin, Sam is a Super Admin.
@@ -89,12 +89,6 @@ select is(
 );
 select is(
   (select concat_ws(',', "read", "create", "update", "delete") from public.app_permissions
-    where role_id = '30000000-0000-0000-0000-000000000002' and resource = 'todos'),
-  't,t,t,t',
-  'User keeps full access to their own todos'
-);
-select is(
-  (select concat_ws(',', "read", "create", "update", "delete") from public.app_permissions
     where role_id = '30000000-0000-0000-0000-000000000003' and resource = 'roles'),
   't,t,t,t',
   'Super Admin can read and write roles'
@@ -113,7 +107,6 @@ select set_config('request.jwt.claim.sub', 'aaaaaaaa-0000-0000-0000-00000000000a
 
 -- 13-15
 select is(public.has_permission('roles', 'create'), false, 'User cannot create roles');
-select is(public.has_permission('todos', 'read'), true, 'User can read todos');
 select throws_ok(
   $$insert into public.app_permissions (role_id, resource, "read")
     values ('30000000-0000-0000-0000-000000000002', 'sneaky', true)$$,
@@ -151,7 +144,7 @@ select lives_ok(
   'an Admin update of app_permissions is silently filtered by RLS'
 );
 select lives_ok(
-  $$delete from public.app_permissions where resource = 'todos'$$,
+  $$delete from public.app_permissions where resource = 'profiles'$$,
   'an Admin delete of app_permissions is silently filtered by RLS'
 );
 select lives_ok(
@@ -207,7 +200,7 @@ select is(
   'Admin permissions on app_permissions are unchanged'
 );
 select cmp_ok(
-  (select count(*) from public.app_permissions where resource = 'todos'),
+  (select count(*) from public.app_permissions where resource = 'profiles'),
   '=',
   3::bigint,
   'the Admin delete attempt removed nothing'

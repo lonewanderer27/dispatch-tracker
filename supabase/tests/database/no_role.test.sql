@@ -2,7 +2,7 @@
 -- Run with: pnpm test:db   (supabase test db)
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(13);
+select plan(10);
 
 -- Nora just signed up (no role). Sam is a Super Admin.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
@@ -16,9 +16,6 @@ values
 
 update public.profiles set role_id = '30000000-0000-0000-0000-000000000003'
   where id = 'd5500000-0000-0000-0000-00000000000d';
-
--- One todo of Nora's, made as the owner, so we can tell "hidden" from "not there".
-insert into public.todos (user_id, title) values ('e5500000-0000-0000-0000-00000000000e', 'Nora todo');
 
 -- 1: the trigger gave her no role.
 select is(
@@ -46,14 +43,6 @@ select is(
 );
 select is((select count(*) from public.roles), 0::bigint, 'no role: she cannot read roles');
 
--- 8-9: even her own todos are hidden and she cannot add one.
-select is((select count(*) from public.todos), 0::bigint, 'no role: her own todo is hidden');
-select throws_ok(
-  $$insert into public.todos (user_id, title) values ('e5500000-0000-0000-0000-00000000000e', 'x')$$,
-  '42501',
-  null,
-  'no role: she cannot create a todo'
-);
 reset role;
 
 -- 10: Sam gives her the User role.
@@ -66,13 +55,12 @@ select lives_ok(
 );
 reset role;
 
--- 11-13: now she gets what a User gets.
+-- 11-12: now she gets what a User gets.
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"e5500000-0000-0000-0000-00000000000e","role":"authenticated"}', true);
 select set_config('request.jwt.claim.sub', 'e5500000-0000-0000-0000-00000000000e', true);
 select is(public.has_permission('clients', 'read'), true, 'with the User role she can read clients');
 select is(public.has_permission('clients', 'create'), false, 'with the User role she still cannot create clients');
-select is((select count(*) from public.todos), 1::bigint, 'with the User role she sees her own todo');
 reset role;
 
 select * from finish();

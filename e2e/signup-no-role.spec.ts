@@ -14,5 +14,5 @@ test('someone who signs up has no role and sees only the notice', async ({ page 
   await expect(page.getByText('Your account has no access yet')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
   // No page content: neither the dashboard buttons nor any list.
-  await expect(page.getByTestId('btn-call-rpc')).toHaveCount(0)
+  await expect(page.getByTestId('btn-invoke-edge')).toHaveCount(0)
 })

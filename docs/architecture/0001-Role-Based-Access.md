@@ -30,8 +30,8 @@ ask the database; they do not decide who may do what.
   and four booleans `read`, `create`, `update`, `delete`. The key is `(role_id, resource)`.
 - Admin and Super Admin read and write every dispatch table. User reads only.
 - Only Super Admin can write `roles` and `app_permissions`. Admin can only read them.
-- The rows for `profiles` and `todos` describe today's behaviour (own rows only for Users). Their
-  policies are written by hand and do not read the matrix.
+- The row for `profiles` describes today's behaviour (own rows only for Users). Its policies are
+  written by hand and do not read the matrix. (`todos` had a row too until 0041 dropped the table.)
 
 ### How a policy reads the matrix
 
@@ -40,8 +40,7 @@ ask the database; they do not decide who may do what.
   `false` for an unknown action or when there is no row (deny by default).
 - Every dispatch table has four policies, one per action, that call
   `(select public.has_permission('<table>', '<action>'))`.
-- `public.is_admin()` is true for Admin and Super Admin. Only the `profiles` and `todos` policies still
-  use it.
+- `public.is_admin()` is true for Admin and Super Admin. Only the `profiles` policies still use it.
 
 ### Adding a table
 
@@ -62,7 +61,7 @@ ask the database; they do not decide who may do what.
 
 - Ticket: T3C-B39. Plan: `.claude/plans/T3C-B39-Backend-Signup-No-Default-Role.md`. Date: 2026-11-27.
 - `profiles.role_id` is empty for a new sign-up (no default, not required). Nothing invents a role. Existing users keep theirs.
-- `has_permission()` is false for a user with no role, so the dispatch tables, `roles` and `app_permissions` show them nothing. The four own-row policies of `todos` now call `has_permission('todos', ...)` too, so even their own todos are hidden. A user with no role can still read and rename their own profile row, because the app needs it to know who they are.
+- `has_permission()` is false for a user with no role, so the dispatch tables, `roles` and `app_permissions` show them nothing. The four own-row policies of `todos` now call `has_permission('todos', ...)` too, so even their own todos are hidden. (The table was dropped in 0041; see [0009](0009-Remove-Todos.md).) A user with no role can still read and rename their own profile row, because the app needs it to know who they are.
 - The web app replaces every page with "Your account has no access yet" and a Sign out button for such a user (`RoleOutlet`, `src/app/RoleGate.tsx`). It fails closed. The database is what enforces the rule.
 - A Super Admin gives a role on the Users page (`admin_update_profile`). The list shows "No role" for new sign-ups.
 - Public sign-up stays on. In the hosted project **Confirm email must be on**, so nobody can sign up with an address they do not own.

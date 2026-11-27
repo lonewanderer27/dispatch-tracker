@@ -12,7 +12,7 @@ const { accessControlProvider } = await import('@/app/providers/accessControlPro
 
 describe('accessControlProvider', () => {
   it('allows resources that are not restricted without asking who the user is', async () => {
-    const res = await accessControlProvider.can({ resource: 'todos', action: 'list' })
+    const res = await accessControlProvider.can({ resource: 'companies', action: 'list' })
     expect(res).toEqual({ can: true })
     expect(getIdentity).not.toHaveBeenCalled()
   })
